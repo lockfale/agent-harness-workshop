@@ -57,6 +57,11 @@ Sources:
   [tasks/README.md](tasks/README.md).
 - Hack The Box, Cyber Apocalypse 2024: the original Flag Command and LockTalk
   challenges.
+- ARC-AGI-3 competition harnesses ([ARC Prize](https://arcprize.org/)). An
+  analysis of how they win shaped the verification design here: orchestration
+  alone can lift a model's success rate several-fold, but only around a real
+  verifier, because search converges on the truth only when the verifier
+  contains it.
 - GEPA: Agrawal et al., "GEPA: Reflective Prompt Evolution Can Outperform
   Reinforcement Learning", [arXiv:2507.19457](https://arxiv.org/abs/2507.19457).
 - [scopebench](https://scopebench.ai/benchmarks), for the scope lab.
