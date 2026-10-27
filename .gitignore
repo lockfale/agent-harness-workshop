@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Harness output: traces, status files, expectations contracts.
+runs/
+.pytest_cache/

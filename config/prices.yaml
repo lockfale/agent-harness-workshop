@@ -1,0 +1,83 @@
+# Price table. USD per 1,000,000 tokens.
+#
+# This table is the only place the harness learns what a model costs. There is
+# no default price and no fallback guess: a model that is not listed here, and
+# does not carry a local prefix, aborts the run at startup. That is deliberate.
+# A budget guard that invents a price for a model it does not recognise will
+# eventually invent a frontier price for a cheap model and kill a long run at
+# roughly sixty times its real cost.
+#
+# >>> VERIFY THESE NUMBERS BEFORE THE WORKSHOP. <<<
+# Provider prices move. Every row below was checked against OpenRouter's
+# public models API (https://openrouter.ai/api/v1/models) on prices_verified.
+# Slugs are spelled exactly as OpenRouter lists them (note the dots in the
+# Anthropic version numbers). Re-check before relying on a budget cap.
+
+prices_verified: 2026-10-26
+
+# Stripped from the front of a model name before lookup. The gateway owns
+# routing; the price table should not care which gateway you went through.
+gateway_prefixes:
+  - or
+  - openrouter
+  - gw
+
+# Anything behind one of these prefixes is priced at $0.00. Your own GPU is
+# already paid for, and pretending otherwise makes the budget guard useless.
+local_prefixes:
+  - local
+  - spark
+  - ollama
+  - vllm
+  - lmstudio
+
+models:
+  # All rows: OpenRouter list prices, verified 2026-10-26.
+  # --- Frontier ---------------------------------------------------------------
+  anthropic/claude-opus-5.5:
+    input: 4.00
+    output: 20.00
+    cache_read: 0.20
+  anthropic/claude-sonnet-5.5:
+    input: 2.00
+    output: 10.00
+    cache_read: 0.10
+  openai/gpt-5.5:
+    input: 5.00
+    output: 30.00
+    cache_read: 0.50
+  # --- Mid tier ---------------------------------------------------------------
+  anthropic/claude-haiku-5.5:
+    input: 0.10
+    output: 0.50
+    cache_read: 0.01
+  google/gemini-3.8-flash:
+    input: 0.825
+    output: 4.125
+    cache_read: 0.0825
+  openai/gpt-5.4-mini:
+    input: 0.75
+    output: 4.50
+    cache_read: 0.075
+  minimax/minimax-m3:
+    input: 0.30
+    output: 1.20
+    cache_read: 0.06
+  # --- Cheap / open-weight (different lineages, useful for refuter panels) ----
+  deepseek/deepseek-v4.1-flash:
+    input: 0.0477
+    output: 0.1908
+    cache_read: 0.000954
+  z-ai/glm-5.3-flash:
+    input: 0.15
+    output: 0.50
+    cache_read: 0.03
+  qwen/qwen3.6-35b-a3b:
+    input: 0.10
+    output: 0.95
+    cache_read: 0.05
+  # Note the output price: cheap to read, expensive to talk.
+  moonshotai/kimi-k3:
+    input: 0.169
+    output: 20.00
+    cache_read: 0.159

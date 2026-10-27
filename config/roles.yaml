@@ -1,0 +1,81 @@
+# Role -> model routing for the harness.
+#
+# The model name here is passed to the gateway untouched. Prefix routing is the
+# gateway's job, not the harness's:
+#
+#   or/anthropic/claude-sonnet-5.5   -> routed to OpenRouter by a gateway
+#   anthropic/claude-sonnet-5.5      -> straight to OpenRouter, no gateway
+#   local/qwen3-coder                -> your own OpenAI-compatible endpoint
+#   spark/glm-5.3-flash              -> same, different gateway prefix
+#
+# Attendees with hardware and attendees without run the same code. Only these
+# strings differ. Every name you put here must also exist in prices.yaml, or
+# the run aborts at startup (see pricing.py).
+#
+# One rule that is not negotiable: the model that generates a candidate must
+# not be the only model that judges it. See harness/README.md.
+
+# Prompt A/B (M6): any role may set
+#
+#   system_prompt_suffix_file: ~/somewhere/outside-the-repo/suffix.md
+#
+# Off by default. The file's text is appended to that role's system prompt.
+# The trace records only the file's basename and sha256, never the text. A
+# missing file stops the run at start. See harness/README.md.
+
+defaults:
+  max_output_tokens: 8192
+  reasoning_effort: medium
+  max_turns: 20
+  budget_usd: 1.00        # per-role cap
+
+roles:
+  recon:
+    model: anthropic/claude-sonnet-5.5
+    max_output_tokens: 8192
+    reasoning_effort: medium
+    max_turns: 24
+    budget_usd: 1.50
+
+  triage:
+    # Deterministic dedup runs in code before this model is asked anything.
+    # Do not point this role at an abliterated model. See README.
+    model: anthropic/claude-sonnet-5.5
+    reasoning_effort: high
+    max_turns: 8
+    budget_usd: 0.50
+
+  refute:
+    # A panel, not one model. Majority refutation kills the candidate and
+    # "uncertain" counts as refuted. Three lineages, none of them the
+    # generator's: the candidates come from Sonnet, so no Anthropic model sits
+    # on this panel (P10).
+    model: deepseek/deepseek-v4.1-flash
+    panel:
+      - deepseek/deepseek-v4.1-flash
+      - z-ai/glm-5.3-flash
+      - qwen/qwen3.6-35b-a3b
+    reasoning_effort: medium
+    max_turns: 4
+    budget_usd: 0.75
+
+  build:
+    model: anthropic/claude-sonnet-5.5
+    max_output_tokens: 16384
+    reasoning_effort: high
+    max_turns: 24
+    budget_usd: 2.00
+
+  exploit:
+    model: anthropic/claude-sonnet-5.5
+    max_output_tokens: 16384
+    reasoning_effort: high
+    max_turns: 32
+    budget_usd: 2.00
+
+  judge:
+    # Must not share a lineage with the exploit role. Must not be abliterated.
+    model: google/gemini-3.8-flash
+    reasoning_effort: high
+    max_turns: 6
+    budget_usd: 0.75

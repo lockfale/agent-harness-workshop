@@ -1,0 +1,15 @@
+# Python 3.11 or newer.
+#
+#   python3 -m venv .venv && . .venv/bin/activate
+#   pip install -r harness/requirements.txt
+
+openai>=1.58            # chat completions; 1.58 added the reasoning_effort kwarg
+jsonschema>=4.21        # tool input validation
+PyYAML>=6.0             # roles.yaml, prices.yaml, scope rules
+
+# Tests only.
+pytest>=8.0
+
+# Optional. Needed only for the M2 exercise that loads tools from an MCP
+# server over stdio. Everything else runs without it.
+# mcp>=1.2
