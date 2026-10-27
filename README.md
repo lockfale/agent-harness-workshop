@@ -35,3 +35,32 @@ not on the morning. No class time is spent on installation.
 | `tasks/` | The two Cybench tasks the labs run against, copied from upstream |
 
 > **Status: scaffold.** Lab material is being filled in ahead of the session.
+
+## Credits
+
+**Griffin Francis** and **Adrian Wood**, for inspiration, consultation, and
+testing these ideas out.
+
+Adrian's talk on a security review pipeline is the source of the risk
+cascade (cheap models for recall, static analysis for precision, large models
+for judgement), MCP composition, tokenomics as a risk metric, and a scope judge
+that answers allow, deny or ask. Adrian's GEPA "operational discipline" prompt
+is why the harness can A/B a per-role prompt suffix. Its reported improvement is
+in-sample; see
+[harness/README.md](harness/README.md#prompt-ab-appending-a-system-prompt-suffix).
+
+Sources:
+
+- [Cybench](https://github.com/andyzorigin/cybench), Stanford CRFM (Zhang et
+  al., [arXiv:2408.08926](https://arxiv.org/abs/2408.08926)), Apache License
+  2.0. The two tasks in `tasks/` are copied from it; see
+  [tasks/README.md](tasks/README.md).
+- Hack The Box, Cyber Apocalypse 2024: the original Flag Command and LockTalk
+  challenges.
+- GEPA: Agrawal et al., "GEPA: Reflective Prompt Evolution Can Outperform
+  Reinforcement Learning", [arXiv:2507.19457](https://arxiv.org/abs/2507.19457).
+- [scopebench](https://scopebench.ai/benchmarks), for the scope lab.
+- freed0m's
+  [red team bench](https://betheadversary.com/posts/dgx_spark_red_team_bench/):
+  every model tested was willing to help by default, so willingness tells you
+  nothing and accuracy is what separates them.

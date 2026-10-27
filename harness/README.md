@@ -102,6 +102,27 @@ It sees `shell` as a command in the attacker container and does not parse it,
 so `curl` to an out-of-scope host goes past it. That gap is the M5 lab; see the
 docstring in `gates/scope.py`.
 
+### Docker, and the more secure alternative
+
+Containers share the host's kernel. What separates the attacker container from
+your machine is namespaces, cgroups and seccomp, so a kernel bug reachable from
+the agent's shell is a way out. For a sandboxed CTF on your own laptop that is
+an acceptable risk. For model-written commands against anything you care
+about, it is not.
+
+The stronger option we considered is [Firecracker](https://firecracker-microvm.github.io/),
+the open-source microVM monitor built on KVM that isolates AWS Lambda and
+Fargate workloads. Each microVM boots its own guest kernel, so escaping the
+workload means escaping a virtual machine rather than a set of namespaces. The
+labs use Docker anyway for two reasons:
+
+* Cybench ships its tasks as Compose projects.
+* Firecracker needs Linux with KVM, which most attendee laptops (macOS,
+  Windows) do not provide natively.
+
+If you take this harness further, run the attacker side in a microVM. Kata
+Containers can put Firecracker underneath a container workflow.
+
 ### The workshop tasks
 
 `harness/cybench.py` `TASKS` has two entries, keyed by slug, with `workdir`
