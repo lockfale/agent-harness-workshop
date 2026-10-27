@@ -33,6 +33,7 @@ not on the morning. No class time is spent on installation.
 | `config/` | Gateway config with model-name prefixes per backend |
 | `lab-data/` | Static data the labs need |
 | `tasks/` | The two Cybench tasks the labs run against, copied from upstream |
+| `docs/` | Background reading, starting with how the ARC-AGI-3 competition harnesses compare to this one |
 
 > **Status: scaffold.** Lab material is being filled in ahead of the session.
 
