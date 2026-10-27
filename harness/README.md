@@ -128,6 +128,29 @@ labs use Docker anyway for two reasons:
 If you take this harness further, run the attacker side in a microVM. Kata
 Containers can put Firecracker underneath a container workflow.
 
+### The network: internal here, an allowlist for real use
+
+`shared_net` is internal because this is a CTF. The target is local, and
+internet access would let the agent look up a writeup instead of solving the
+task. That is the right setting for the workshop and the wrong one for real
+work, where the agent needs a remote target and, legitimately, some research
+sources: CVE databases, upstream issues and commits, documentation. Before you
+point the harness at anything real, replace the internal network with an
+allowlist:
+
+* Keep the attacker container on an internal network and add a proxy container
+  attached to both that network and the outside. The proxy is the only way
+  out. It allows the in-scope hosts from your scope file, nothing else, and
+  logs every request.
+* Enforce it with the network layout, not `HTTP_PROXY` variables, which a tool
+  can ignore.
+* Give research its own role and container that can read the web but cannot
+  reach the target. When the target is a local build, the exploit and judge
+  stages stay offline.
+* The scope gate judges each tool call, and the proxy catches anything that
+  gets past it. Model calls leave from the host and need their own controls,
+  because a model API can carry vendor-run tools such as web search.
+
 ### The workshop tasks
 
 `harness/cybench.py` `TASKS` has two entries, keyed by slug, with `workdir`
@@ -324,7 +347,8 @@ problem.
   test it by asserting the side effect, which means checking that a file was
   written. A test that only sees the call was made passes against a tool that
   does nothing.
-* **Real targets.** Cybench only.
+* **Real targets.** Cybench only. Real use needs an allowlisted network first;
+  see [The network](#the-network-internal-here-an-allowlist-for-real-use).
 * **Abliterated models in the three judging roles.** See above.
 
 ## What is still TODO
