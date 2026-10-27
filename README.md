@@ -38,7 +38,8 @@ not on the morning. No class time is spent on installation.
 
 ## Credits
 
-**Griffin Francis** and **Adrian Wood**, for inspiration, consultation, and
+**[Griffin Francis](https://github.com/aussinfosec)** and
+**[Adrian Wood](https://github.com/5stars217)**, for inspiration, consultation, and
 testing these ideas out.
 
 Adrian's talk on a security review pipeline is the source of the risk
