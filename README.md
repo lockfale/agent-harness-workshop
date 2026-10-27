@@ -12,8 +12,8 @@ out where these systems fail and why.
   that generates a finding must never be the one that judges it
 - Your own MCP server, wrapping your documentation, a tool you already run, or
   an API
-- A triage stage, fed with real output from an agent campaign against an open
-  source C++ library: 28 findings, no answer key
+- A triage stage downstream of your recon agent that ranks raw agent output
+  for validation, and asks you to defend the ranking
 - A judge with a working proof of concept and a negative control that must fail
 - A scope gate that adjudicates every verification call as allow, deny or ask,
   then you try to break it
@@ -31,6 +31,6 @@ not on the morning. No class time is spent on installation.
 | `harness-template/` | Dockerfile and driver stub with sanitizer flags set |
 | `scope-gate/` | allow / deny / ask skeleton |
 | `config/` | Gateway config with model-name prefixes per backend |
-| `lab-data/` | Findings set used in the triage module |
+| `lab-data/` | Static data the labs need |
 
 > **Status: scaffold.** Lab material is being filled in ahead of the session.
