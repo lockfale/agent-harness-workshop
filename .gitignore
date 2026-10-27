@@ -6,3 +6,6 @@ venv/
 # Harness output: traces, status files, expectations contracts.
 runs/
 .pytest_cache/
+
+# Private local notes. Never commit.
+CLAUDE.local.md
