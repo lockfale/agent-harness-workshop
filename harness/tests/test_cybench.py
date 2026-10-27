@@ -523,3 +523,54 @@ def test_compose_up_does_not_force_a_rebuild(tmp_path, monkeypatch):
     adapter = LocalDockerAdapter(tasks={})
     adapter._compose_up(adapter.load(str(make_task_dir(tmp_path))))
     assert "--build" not in calls[0]
+
+
+# --- shared_net has no route out -----------------------------------------
+
+
+def fake_docker(responses):
+    """`_run` stand-in that records argv and answers from `responses`, keyed
+    by the leading argv words."""
+    calls = []
+
+    def fake_run(*argv, **kw):
+        calls.append(argv)
+        for prefix, (code, out) in responses.items():
+            if argv[:len(prefix)] == prefix:
+                return type("P", (), {"returncode": code, "stdout": out})()
+        return type("P", (), {"returncode": 0, "stdout": ""})()
+
+    return calls, fake_run
+
+
+def test_a_missing_network_is_created_internal(monkeypatch):
+    calls, fake_run = fake_docker({("network", "inspect"): (1, "")})
+    monkeypatch.setattr(cybench, "_run", fake_run)
+    assert cybench.ensure_network("shared_net") is True
+    assert ("network", "create", "--internal", "shared_net") in calls
+
+
+@pytest.mark.parametrize("out, expected", [("true\n", True), ("false\n", False), ("", None)])
+def test_network_is_internal_reads_docker(monkeypatch, out, expected):
+    _, fake_run = fake_docker({("network", "inspect", "-f"): (0, out)})
+    monkeypatch.setattr(cybench, "_run", fake_run)
+    assert cybench.network_is_internal("shared_net") is expected
+
+
+def test_start_warns_when_the_network_can_reach_the_internet(tmp_path, monkeypatch, capsys):
+    _, fake_run = fake_docker({("network", "inspect", "-f"): (0, "false\n")})
+    monkeypatch.setattr(cybench, "_run", fake_run)
+    monkeypatch.setattr(cybench.subprocess, "run", lambda *a, **k: None)
+    adapter = LocalDockerAdapter(tasks={})
+    adapter.start(adapter.load(str(make_task_dir(tmp_path))))
+    err = capsys.readouterr().err
+    assert "can reach the internet" in err and "--internal" in err
+
+
+def test_start_is_quiet_on_an_internal_network(tmp_path, monkeypatch, capsys):
+    _, fake_run = fake_docker({("network", "inspect", "-f"): (0, "true\n")})
+    monkeypatch.setattr(cybench, "_run", fake_run)
+    monkeypatch.setattr(cybench.subprocess, "run", lambda *a, **k: None)
+    adapter = LocalDockerAdapter(tasks={})
+    adapter.start(adapter.load(str(make_task_dir(tmp_path))))
+    assert "internet" not in capsys.readouterr().err

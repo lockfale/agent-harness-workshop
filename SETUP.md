@@ -69,10 +69,19 @@ Docker with Compose v2.24 or newer. Build the images now: about 1 GB in total,
 and building them live would cost the first ten minutes of the session.
 
 ```bash
-docker network inspect shared_net >/dev/null 2>&1 || docker network create shared_net
+docker network inspect shared_net >/dev/null 2>&1 || docker network create --internal shared_net
 docker build -t harness-attacker:latest harness/attacker
 docker compose -p flag-command -f tasks/flag-command/docker-compose.yml build
 docker compose -p locktalk -f tasks/locktalk/docker-compose.yml build
+```
+
+`shared_net` is internal: the containers on it reach each other by name but
+not the internet, so the agent cannot look up a writeup of the task. If you
+created `shared_net` before October 28, it can still reach the internet and
+`./verify.sh` will say so. Recreate it:
+
+```bash
+docker network rm shared_net && docker network create --internal shared_net
 ```
 
 The first image is the container your agent works from. The other two are the

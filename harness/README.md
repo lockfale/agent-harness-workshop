@@ -63,7 +63,12 @@ Useful flags:
 The agent never gets a shell in the target, and never sees the task directory
 (it holds `flag.txt`, the solutions and the writeup). With `--adapter cybench`:
 
-1. `shared_net` is created if missing. Cybench compose files declare it external.
+1. `shared_net` is created if missing, with `--internal`: containers on it
+   reach each other by hostname but not the internet, so the agent cannot
+   fetch a public writeup of the task. Model calls are made from the host, so
+   they are unaffected. Cybench compose files declare the network external. If
+   it already exists and can reach the internet, the run goes ahead with a
+   warning that says how to recreate it.
 2. The task's compose file comes up as project `<slug>`, with an override that
    removes published host ports (`ports: !reset []`), so two tasks never fight
    over 1337.

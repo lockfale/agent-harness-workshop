@@ -53,9 +53,15 @@ done
 
 echo
 echo "Docker images"
-docker network inspect shared_net >/dev/null 2>&1 \
-  && ok "network shared_net" \
-  || bad "network shared_net missing: docker network create shared_net"
+# shared_net must be internal: the containers reach each other by name but not
+# the internet, so the agent cannot look up a writeup of the task.
+if ! docker network inspect shared_net >/dev/null 2>&1; then
+  bad "network shared_net missing: docker network create --internal shared_net"
+elif [ "$(docker network inspect -f '{{.Internal}}' shared_net 2>/dev/null)" = "true" ]; then
+  ok "network shared_net (internal, no internet)"
+else
+  bad "network shared_net can reach the internet: docker network rm shared_net && docker network create --internal shared_net"
+fi
 for img in harness-attacker:latest flag-command-web_flag:latest locktalk-locktalk:latest; do
   docker image inspect "$img" >/dev/null 2>&1 \
     && ok "image $img" \

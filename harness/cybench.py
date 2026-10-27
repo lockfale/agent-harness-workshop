@@ -40,6 +40,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Protocol
@@ -437,9 +438,12 @@ class LocalDockerAdapter:
                 f"to bring up. Pass --task <path>."
             )
         ensure_network(task.network)
+        warn_if_network_open(task.network)
         self._compose_up(task)
         for companion in task.companions:
-            ensure_network(companion.network)
+            if companion.network != task.network:
+                ensure_network(companion.network)
+                warn_if_network_open(companion.network)
             self._compose_up(companion)
         ensure_attacker_image(task.attacker_image)
         prepare_files(task)
@@ -571,12 +575,33 @@ def ensure_network(network: str = SHARED_NET) -> bool:
     """Create the Docker network if it is missing. Returns True if created.
 
     Cybench compose files declare `shared_net` as external, so `compose up`
-    fails outright when it does not exist yet.
+    fails outright when it does not exist yet. It is created `--internal`:
+    containers on it reach each other by name but not the internet, so the
+    agent cannot fetch a public writeup of the task.
     """
     if _run("network", "inspect", network, check=False).returncode == 0:
         return False
-    _run("network", "create", network)
+    _run("network", "create", "--internal", network)
     return True
+
+
+def network_is_internal(network: str = SHARED_NET) -> bool | None:
+    """True if the network has no route out, False if it has one, None if
+    Docker did not say."""
+    out = _run("network", "inspect", "-f", "{{.Internal}}", network, check=False).stdout
+    return {"true": True, "false": False}.get((out or "").strip().lower())
+
+
+def warn_if_network_open(network: str = SHARED_NET) -> None:
+    """A network created before it was made internal still routes out. Say so
+    rather than refuse, so a run started mid-session still goes ahead."""
+    if network_is_internal(network) is False:
+        print(
+            f"warning: Docker network {network!r} can reach the internet, so the agent "
+            f"could look up a writeup. Recreate it with: docker network rm {network} && "
+            f"docker network create --internal {network}",
+            file=sys.stderr,
+        )
 
 
 def ensure_attacker_image(image: str = ATTACKER_IMAGE) -> None:
