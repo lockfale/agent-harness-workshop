@@ -32,5 +32,6 @@ not on the morning. No class time is spent on installation.
 | `scope-gate/` | allow / deny / ask skeleton |
 | `config/` | Gateway config with model-name prefixes per backend |
 | `lab-data/` | Static data the labs need |
+| `tasks/` | The two Cybench tasks the labs run against, copied from upstream |
 
 > **Status: scaffold.** Lab material is being filled in ahead of the session.
