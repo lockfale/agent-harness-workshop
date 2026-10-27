@@ -43,10 +43,10 @@ not on the morning. No class time is spent on installation.
 **[Adrian Wood](https://github.com/5stars217)**, for inspiration, consultation, and
 testing these ideas out.
 
-Adrian's talk on a security review pipeline is the source of the risk
-cascade (cheap models for recall, static analysis for precision, large models
-for judgement), MCP composition, tokenomics as a risk metric, and a scope judge
-that answers allow, deny or ask. Adrian's GEPA "operational discipline" prompt
+Adrian's talk on a production agent pipeline for security review is the source
+of the risk cascade (cheap models for recall, static analysis for precision,
+large models for judgement), MCP composition, tokenomics as a risk metric, and
+a scope judge that answers allow, deny or ask. Adrian's GEPA "operational discipline" prompt
 is why the harness can A/B a per-role prompt suffix. Its reported improvement is
 in-sample; see
 [harness/README.md](harness/README.md#prompt-ab-appending-a-system-prompt-suffix).
