@@ -57,6 +57,12 @@ proof tier the judge has to justify. A confirmed finding can still carry the
 wrong severity if the harness built its preconditions; see
 [harness/README.md](../harness/README.md#on-a-confirmed-finding-with-the-wrong-severity).
 
+**Readiness.** Before the exploit runs, the harness checks that the target is
+up. On a real target there is no shared task network and no way to probe from
+inside the target, so probe from the attacker container through the same path
+the exploit will use, proxy included. That is real evidence the service
+answered. A port answering somewhere else, such as on your own host, is not.
+
 **A human in the loop, on purpose.** Source code review can run nearly
 unattended. Live testing should not; see
 [On autonomy scores](../harness/README.md#on-autonomy-scores). Use

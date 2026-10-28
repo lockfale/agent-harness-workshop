@@ -335,7 +335,8 @@ visitor makes. `control_triggered()` decides whether that benign request
 triggered the behaviour you are claiming. If it did, your exploit proves
 nothing.
 
-> Hint: what does the task tell you the flag looks like? A clean control's
+> Hint: `control_triggered()` is handed the task's `marker`, its success
+> marker from `TASKS`. Use it rather than typing the value. A clean control's
 > output must not contain it. And a control that failed to run at all is not
 > a clean control.
 

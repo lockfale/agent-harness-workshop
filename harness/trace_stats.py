@@ -13,6 +13,7 @@ and the stop reason is what tells them apart.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Any, Iterable
@@ -25,10 +26,13 @@ def collect(events: Iterable[dict[str, Any]]) -> tuple[dict[str, RoleStats], dic
     roles: dict[str, RoleStats] = {}
     order: list[str] = []
     starts: dict[str, float] = {}
+    verdict_calls: dict[Any, dict[str, Any]] = {}
     run: dict[str, Any] = {
         "run_id": None,
         "task": None,
         "verdict": None,
+        "proof_tier": None,
+        "trigger_origin": None,
         "failure_origin": None,
         "spent_usd": 0.0,
         "gate_rejects": 0,
@@ -75,8 +79,15 @@ def collect(events: Iterable[dict[str, Any]]) -> tuple[dict[str, RoleStats], dic
             stats.last_stop_reason = event.get("stop_reason")
         elif kind == "tool_call" and role:
             role_for(role).tool_calls += 1
+            if event.get("tool") == "record_verdict":
+                verdict_calls[event.get("call_id")] = _arguments(event)
         elif kind == "tool_result" and role and event.get("ok") is False:
             role_for(role).tool_errors += 1
+        elif kind == "tool_result" and event.get("tool") == "record_verdict":
+            # The accepted verdict's own fields. A rejected call never gets here.
+            accepted = verdict_calls.get(event.get("call_id")) or {}
+            run["proof_tier"] = accepted.get("proof_tier")
+            run["trigger_origin"] = accepted.get("trigger_origin")
         elif kind == "gate_reject":
             run["gate_rejects"] += 1
         elif kind == "scope_decision" and event.get("decision") == "deny":
@@ -92,6 +103,17 @@ def collect(events: Iterable[dict[str, Any]]) -> tuple[dict[str, RoleStats], dic
             run["judge_invoked"] = event.get("judge_invoked")
 
     return {name: roles[name] for name in order}, run
+
+
+def _arguments(event: dict[str, Any]) -> dict[str, Any]:
+    """A tool call's arguments, whether the trace holds them as JSON or a dict."""
+    arguments = event.get("arguments")
+    if isinstance(arguments, str):
+        try:
+            arguments = json.loads(arguments)
+        except json.JSONDecodeError:
+            return {}
+    return arguments if isinstance(arguments, dict) else {}
 
 
 HEADER = (
@@ -116,6 +138,10 @@ def render(roles: dict[str, RoleStats], run: dict[str, Any]) -> str:
         )
     lines.append("")
     lines.append(f"verdict          {run.get('verdict') or '-'}")
+    if run.get("proof_tier"):
+        lines.append(f"proof_tier       {run['proof_tier']}")
+    if run.get("trigger_origin"):
+        lines.append(f"trigger_origin   {run['trigger_origin']}")
     if run.get("failure_origin"):
         lines.append(f"failure_origin   {run['failure_origin']}")
     lines.append(f"judge_invoked    {run.get('judge_invoked')}")
@@ -124,10 +150,13 @@ def render(roles: dict[str, RoleStats], run: dict[str, Any]) -> str:
     lines.append(f"scope denials    {run.get('scope_denials')}")
     if run.get("readiness"):
         lines.append(f"readiness        {run['readiness']}")
-        if run["readiness"] != "in_container":
+        # Same rule as build.Readiness.weak: probing the service over the
+        # agent's own network path, or from inside the target, is real
+        # evidence. Only a forwarded host port answering is not.
+        if run["readiness"] == "host_only":
             lines.append(
-                "                 (not probed from inside the target, so the "
-                "evidence is weaker than it looks)"
+                "                 (only a host port answered; the service itself "
+                "was not probed, so the evidence is weaker than it looks)"
             )
     if run.get("side_channel_errors"):
         lines.append(

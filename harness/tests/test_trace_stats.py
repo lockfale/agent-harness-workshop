@@ -93,6 +93,37 @@ def test_the_rendered_table_prints_the_last_stop_reason():
     assert recon_line.rstrip().endswith("end_turn")
 
 
+def test_a_probe_over_the_agents_network_is_not_called_weak():
+    """build.py counts shared_net as strong evidence; the table must agree."""
+    trace = Trace(path=None)
+    trace.event("readiness", readiness="shared_net")
+    table = render(*collect(trace.events))
+    assert "readiness        shared_net" in table
+    assert "weaker than it looks" not in table
+
+
+def test_the_accepted_verdict_shows_its_tier_and_trigger_origin():
+    """Step 6 asks for trigger_origin; it should not take a grep to find."""
+    trace = Trace(path=None)
+    trace.tool_call(role="judge", turn=0, tool="record_verdict", call_id="v1",
+                    arguments=json.dumps({"verdict": "confirmed", "proof_tier": "impact_confirmed",
+                                          "trigger_origin": "harness_constructed"}))
+    trace.tool_result(role="judge", turn=0, tool="record_verdict", call_id="v1",
+                      ok=False, content=None, error="rule 6 caps this at exploitable")
+    trace.tool_call(role="judge", turn=1, tool="record_verdict", call_id="v2",
+                    arguments={"verdict": "confirmed", "proof_tier": "exploitable",
+                               "trigger_origin": "harness_constructed"})
+    trace.tool_result(role="judge", turn=1, tool="record_verdict", call_id="v2",
+                      ok=True, content={"verdict": "confirmed"}, error=None)
+
+    roles, run = collect(trace.events)
+    table = render(roles, run)
+
+    # The accepted call, not the rejected one before it.
+    assert "proof_tier       exploitable" in table
+    assert "trigger_origin   harness_constructed" in table
+
+
 def test_the_summary_carries_the_verdict_and_the_failure_origin():
     roles, run = collect(build_trace().events)
     table = render(roles, run)
