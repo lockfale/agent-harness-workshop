@@ -316,7 +316,7 @@ def compose_override(services: list[str]) -> str:
     Every candidate task publishes 1337:1337, so two tasks up at once collide,
     and the attacker container reaches targets by hostname on shared_net, so
     nothing should be probing a forwarded port anyway. `!reset` needs Compose
-    2.24 or newer.
+    2.24.4 or newer.
     """
     lines = ["services:"]
     for service in services:

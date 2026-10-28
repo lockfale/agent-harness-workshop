@@ -17,10 +17,16 @@ nothing to point at.
 What does work:
 
 - **OpenRouter** — free account, funded with **$20**. Reaches every major model
-  lineage from one endpoint. Funding also raises the daily request cap from 50
-  to 1,000, which matters because a single agent loop can exhaust 50 requests.
+  lineage from one endpoint. The harness's default models are paid models, so
+  an unfunded account cannot run it.
 - **Local Ollama** — two or three models pulled, if you would rather run
   everything on your own hardware.
+
+OpenRouter's free models (IDs ending in `:free`, and the `openrouter/free`
+router) will not carry you through the labs. On an unfunded account they are
+capped at 50 requests a day, and one full harness run can take more than that.
+The router also picks a different model at random for each request, which
+breaks the rule that the model that generates a finding never judges it.
 
 ## 2. A coding assistant — optional but recommended
 
@@ -63,9 +69,26 @@ export HARNESS_BASE_URL=http://localhost:11434/v1
 export HARNESS_API_KEY=local
 ```
 
+Two more changes for local models. The harness sends each model name to your
+endpoint exactly as `config/roles.yaml` spells it, so put the names
+`ollama list` shows in `roles.yaml`. The harness also refuses to start with a
+model that has no price, so give each one a row in `config/prices.yaml` at
+zero:
+
+```yaml
+models:
+  qwen3-coder:
+    input: 0
+    output: 0
+```
+
+A `local/` prefix is priced at zero without a row, but it only works behind a
+gateway that strips the prefix before forwarding. Ollama on its own will not
+find `local/qwen3-coder`.
+
 ## 6. Docker, with the images built in advance
 
-Docker with Compose v2.24 or newer. Build the images now: about 1 GB in total,
+Docker with Compose v2.24.4 or newer. Build the images now: about 1 GB in total,
 and building them live would cost the first ten minutes of the session.
 
 ```bash

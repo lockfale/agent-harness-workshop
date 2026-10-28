@@ -54,7 +54,7 @@ Useful flags:
 | `--previous-tier <tier>` | The `proof_tier` an earlier run of this task reached. The verdict gate will not record a lower one (rule 4). Nothing is read from disk without this. |
 | `--break-harness` | M4 lab. Kills the service after the readiness check, on purpose. |
 | `--adapter stub` | Runs the pipeline with no containers. Good for checking your wiring without pulling images. Default. |
-| `--adapter cybench` | The real adapter. Needs Docker, Compose 2.24 or newer, and a Cybench task directory. |
+| `--adapter cybench` | The real adapter. Needs Docker, Compose 2.24.4 or newer, and a Cybench task directory. |
 | `--scope-rules <file>` | Scope rules for M5. Without it the gate denies everything that leaves the sandbox. |
 | `--non-interactive` | Never prompt. The scope gate denies anything it would have asked a human about. |
 
@@ -210,11 +210,15 @@ roles:
   judge:
     model: anthropic/claude-sonnet-5.5   # straight to OpenRouter
   recon:
-    model: local/qwen3-coder             # your own endpoint, priced at $0
+    model: local/qwen3-coder             # behind a gateway that strips local/, priced at $0
 ```
 
-Changing a role to a `local/...` name changes nothing else. Attendees with two
-GPUs and attendees with twenty dollars of API credit run identical code.
+A `local/` prefix only routes if a gateway in front of your models strips it.
+Pointing `HARNESS_BASE_URL` straight at Ollama or another server instead? Use
+the model name exactly as that server lists it, and give it a row in
+`config/prices.yaml` at zero (`SETUP.md`, step 5). Either way only these
+strings change: attendees with two GPUs and attendees with twenty dollars of
+API credit run identical code.
 
 Every model name in `roles.yaml`, panel members included, must appear in
 `config/prices.yaml` or carry a local prefix. An unlisted model aborts the run

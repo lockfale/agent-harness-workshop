@@ -1,8 +1,8 @@
 # Building a Multi-Agent Harness for Security Work
 
 Hands-on workshop. You will build a multi-agent harness from scratch, with
-separate agents handling recon, triage, exploitation and reporting, then find
-out where these systems fail and why.
+separate agents handling recon, triage, refutation, building, exploitation and
+judging, then find out where these systems fail and why.
 
 **[un]prompted — online, October 27–29, 2026**
 
@@ -27,13 +27,11 @@ not on the morning. No class time is spent on installation.
 
 | Path | Contents |
 |---|---|
-| `mcp-skeleton/` | MCP server starting point: transport, schema, one worked tool |
-| `harness-template/` | Dockerfile and driver stub with sanitizer flags set |
-| `scope-gate/` | allow / deny / ask skeleton |
-| `config/` | Gateway config with model-name prefixes per backend |
-| `lab-data/` | Static data the labs need |
+| `harness/` | The harness: roles, gates, tools and offline tests. The labs are the `TODO` markers in it; [harness/README.md](harness/README.md) maps them |
+| `config/` | `roles.yaml` (which model plays each role) and `prices.yaml` (what each model costs) |
 | `tasks/` | The two Cybench tasks the labs run against, copied from upstream |
 | `docs/` | Background reading, starting with how the ARC-AGI-3 competition harnesses compare to this one |
+| `mcp-skeleton/`, `harness-template/`, `scope-gate/`, `lab-data/` | Placeholders, not used yet |
 
 > **Status: scaffold.** Lab material is being filled in ahead of the session.
 

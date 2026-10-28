@@ -15,17 +15,21 @@ command -v docker >/dev/null 2>&1 && ok "docker installed" || bad "docker not fo
 docker info >/dev/null 2>&1        && ok "docker daemon running" || bad "docker daemon not running"
 command -v git >/dev/null 2>&1     && ok "git installed" || bad "git not found"
 
-# The harness removes the tasks' host port mappings with `!reset`, which
-# arrived in Compose 2.24.
+# The harness removes the tasks' host port mappings with `!reset`. Docker
+# documents 2.24.4 for its sibling `!override` and no version for `!reset`, so
+# 2.24.4 is the floor.
 compose=$(docker compose version --short 2>/dev/null | sed 's/^v//')
 if [ -z "$compose" ]; then
   bad "docker compose v2 not found"
 else
   major=${compose%%.*}; rest=${compose#*.}; minor=${rest%%.*}
-  if [ "$major" -gt 2 ] || { [ "$major" -eq 2 ] && [ "$minor" -ge 24 ]; }; then
+  case "$rest" in *.*) patch=${rest#*.} ;; *) patch=0 ;; esac
+  patch=${patch%%[!0-9]*}; patch=${patch:-0}
+  if [ "$major" -gt 2 ] || { [ "$major" -eq 2 ] && { [ "$minor" -gt 24 ] ||
+       { [ "$minor" -eq 24 ] && [ "$patch" -ge 4 ]; }; }; }; then
     ok "docker compose $compose"
   else
-    bad "docker compose $compose is older than 2.24"
+    bad "docker compose $compose is older than 2.24.4"
   fi
 fi
 

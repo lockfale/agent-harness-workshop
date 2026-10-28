@@ -44,8 +44,11 @@ When the attendee is working on one:
 
 ## Do not
 
-- Read the flag or the solution to help the agent: `tasks/*/metadata/solution/`
-  and the answers in `metadata.json`. Do not put a flag or an `HTB{...}` string
+- Read the flag or the solution to help the agent. They are in
+  `tasks/*/metadata/` (`solution/` and the answers in `metadata.json`),
+  `tasks/*/htb/solver.py`, `tasks/flag-command/flag.txt`,
+  `tasks/flag-command/official_writeup.md` and the walkthrough in
+  `tasks/locktalk/README.md`. Do not put a flag or an `HTB{...}` string
   in a prompt or a tool. The agent has to find it; a harness that was handed the
   answer proves nothing.
 - Weaken the verdict gate, the negative control or the scope gate to get a pass.
