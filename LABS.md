@@ -7,8 +7,10 @@ If you are reading this on GitHub, the outline button at the top right of the
 file jumps between sections.
 
 The labs build one harness, a piece at a time, against one Cybench task: Flag
-Command, a small web app at `web_flag:1337`. Each lab fills in the `TODO`
-markers for one stage. When you get stuck, [CHEATSHEET.md](CHEATSHEET.md) maps
+Command, a small web app at `web_flag:1337`. The agent is briefed as it would
+be for an assessment: the harness writes its own task prompt rather than using
+Cybench's capture-the-flag wording. Each lab fills in the `TODO` markers for
+one stage. When you get stuck, [CHEATSHEET.md](CHEATSHEET.md) maps
 the error messages the harness prints to their fixes.
 
 ## Before the first lab
@@ -76,6 +78,9 @@ target), `http_request`, `record_observation` and `finish`.
 > Hint: tell it what an observation is and is not. "The page loads
 > `/static/terminal/js/main.js`" is an observation. "The app is vulnerable to
 > X" is a conclusion, and it belongs to a later stage.
+
+> Hint: finding an exposed key is recon. Using it is the exploit stage's job.
+> Tell recon to record a secret it finds and never use it.
 
 ### Step 2: implement `record_observation`
 
@@ -162,6 +167,30 @@ Want to wrap something of your own instead? The options from the outline:
 The decision that matters is what goes in the tool description, which the
 model reads on every call, and what goes in the prompt.
 
+### What testing showed
+
+- Recon finished Flag Command by itself, in six turns, with "do not exploit
+  anything" in its prompt. A prompt cannot hold the line between finding
+  something and using it while the role has a shell. Production harnesses
+  hold it with the tool set: the mapping role gets no tool that could use what
+  it finds. Here recon keeps its shell, so that line is yours to watch in the
+  trace.
+- On a harder task, recon spent every turn exploring and recorded nothing, so
+  triage got an empty list. Only the loop knows where the turn cap is, so it
+  now tells every role when three or fewer turns remain, and recon cannot
+  finish with `success` until it has recorded something.
+- One provider decoded the URL in `http_request` against the schema's
+  `pattern` as a whole-string match, so the model could send only `http://`.
+  The model fell back to curl and the run looked fine. A tool schema is a
+  contract with every provider that serves the model.
+- The browser comparison had nothing to compare: everything on this target is
+  readable with curl, so neither the skill nor the MCP tools were used.
+  Offering 25 MCP tools that nobody called still took input tokens from 45.6k
+  to 98.6k for the same run.
+- A call that comes back with `stop_reason` `content_filter` and no tokens was
+  refused by the provider. It is not your prompt; see
+  [CHEATSHEET.md](CHEATSHEET.md).
+
 ---
 
 ## Triage lab: handoff and triage (20 min)
@@ -191,8 +220,7 @@ not review: each panelist's job is to disprove the candidate.
 > defence ("the server might check a session"). Ask for a refutation that
 > points at something the panelist was shown: a status, header or field that
 > contradicts the claim. "By design" is not a reason if it hands a caller
-> something they should not have, and on a CTF target someone designed every
-> weakness.
+> something they should not have.
 
 ### Step 3: run through the refuter panel
 
@@ -226,6 +254,28 @@ refusals also damages calibration, and these roles exist to say no.
 Suiche's weightless write-up on one way it happens: the direction that lets a
 model notice it lacks information looks like refusal, and removing it makes
 the model confabulate.
+
+### What testing showed
+
+Three test runs in a row ended with nothing surviving the panel. Each time the
+panel was right about what it was shown, and what it was shown was the
+problem:
+
+- `must_be_true` asked for a check nobody had run yet. The refuters have no
+  tools, so all they can do with that is refute it.
+- The observation was the model's own account of a request. With the request
+  itself missing, "we cannot tell whether credentials were sent" is a fair
+  objection.
+- "Intended behaviour" and "sample data" excused a weakness that handed any
+  caller something they should not have.
+
+What fixed it: recon cites the call the harness logged, so the refuters read
+the exact request and response; a refutation has to point at something it was
+shown; and `must_be_true` says what the evidence already shows. The next run's
+candidates survived 3 to 0 and 2 to 1.
+
+One panelist voted the right way for the wrong reason: it read the app's hidden
+command as nonsense input. Read the reasons, not just the votes.
 
 ### Optional stretch: more than one model for recon
 
@@ -324,6 +374,14 @@ real code would do? If the harness built the triggering state itself, it
 proved the bug exists under conditions it invented. Rule 6 caps that at
 `exploitable`. Look for `trigger_origin` in the judge's verdict.
 
+### What testing showed
+
+With the triage fixes above, the full run on Flag Command cost about $0.15 and
+took about six minutes. Build wrote the contract first, the negative control
+ran clean, and the judge ruled `confirmed`. It is that cheap because the bug
+is Very Easy. The contract, the control and the verdict gate work the same way
+on a hard bug; the turns and the bill do not.
+
 ---
 
 ## Scope lab: scope as a gated judge (20 min)
@@ -381,6 +439,10 @@ the network: the attacker container can reach only what is in scope.
 [harness/README.md](harness/README.md) describes the allowlist setup real use
 needs.
 
+Note: with no terminal on stdin, for example when a coding assistant runs the
+command for you, the harness behaves as `--non-interactive`, and every `ask`
+becomes a deny.
+
 ### Rules in code, or a model judge?
 
 The gate here is rules in code. Rules cannot be argued with, but they miss
@@ -419,6 +481,56 @@ The file's text is appended to that role's system prompt, and the trace
 records only its name and hash. Run the same task with and without it, more
 than once each, and compare with `trace_stats`. One run per side is an
 anecdote.
+
+### How production prompts are written
+
+The role prompts in a production security harness look less like an essay and
+more like a runbook:
+
+- **One short prompt per role.** Most run 20 to 100 lines. A sub-agent gets
+  one focus, and is told that everything else belongs to someone else.
+- **Open with what the role does not do.** The exploit role provisions, runs
+  and gathers evidence; deciding whether it worked is the judge's job.
+- **Numbered workflows that name the tools,** one per mode, down to which
+  field in a tool's output decides the next step.
+- **A short block of hard rules:** always clean up, even on failure; never
+  change another role's artifact.
+- **A fixed ending:** exactly one recording call, with the fields it needs.
+- **The reason for each rule,** including what the harness does behind the
+  scenes, so the model does not fight it.
+- **Concrete over generic:** an exact search pattern, not "look for secrets".
+- **A stance per role.** Generators report at low confidence and leave the
+  filtering to validation. Refuters assume the finding is wrong, but a
+  refutation they cannot show does not count.
+- **Grounded evidence:** quote the line, cite the logged call, never a
+  paraphrase.
+- **External rules first.** A bug bounty program's rules come before anything
+  in the prompt and cannot be overridden by it.
+
+And the code does what a prompt cannot. Each role gets only the tools for its
+job. Handlers refuse an invalid call and say why. The loop adds its notes
+(turns left, caps) as user turns, which also keeps the system prompt
+byte-identical for caching. A finish is checked against what the role was
+supposed to produce.
+
+### What testing showed, as twelve rules
+
+Each came from a run that went wrong while this workshop was being built.
+
+1. Read the stop reason before you blame the model.
+2. A provider refusal looks like a model failure: `content_filter`, no tokens.
+3. Prompts are not boundaries. Enforce in code what must not happen.
+4. Only the loop knows the clock. Tell the role how many turns it has left.
+5. Saying it is done does not make it done. Check the handoff in code.
+6. Evidence the harness logged beats evidence the model wrote.
+7. A refutation has to point at something the refuter was shown.
+8. Read the reasons, not just the votes.
+9. A tool schema is a contract with the provider, not just the model.
+10. Tools nobody calls still cost tokens on every turn.
+11. Benchmark prompts carry framing. Brief the agent the way you would brief
+    a person.
+12. A good score on public tasks can be recall. Test on something the model
+    has not seen.
 
 ---
 
