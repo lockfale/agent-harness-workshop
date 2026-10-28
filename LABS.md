@@ -179,6 +179,10 @@ model reads on every call, and what goes in the prompt.
   triage got an empty list. Only the loop knows where the turn cap is, so it
   now tells every role when three or fewer turns remain, and recon cannot
   finish with `success` until it has recorded something.
+- If recon's own tool results carry the task's success marker, recon used what
+  it found. The run goes on, but the harness prints a note, writes it to the
+  trace, and marks recon's status `overstepped`, so the next stage's head start
+  is visible.
 - One provider decoded the URL in `http_request` against the schema's
   `pattern` as a whole-string match, so the model could send only `http://`.
   The model fell back to curl and the run looked fine. A tool schema is a
@@ -211,6 +215,10 @@ anything; you write `SYSTEM_PROMPT` and `rank_candidate`, both marked
 > show: the refuters cannot run anything, so a check that still needs running
 > belongs in `first_check`.
 
+> Hint: the refuters see only what `rank_candidate` stores. If you want them
+> to read the observation, and the call recon logged with it, copy them into
+> the candidate.
+
 ### Step 2: the refuter prompt
 
 Open `harness/roles/refute.py` and write `SYSTEM_PROMPT`. Ask for refutation,
@@ -231,7 +239,9 @@ python -m harness.run --adapter cybench --task flag-command --budget-usd 3 --pau
 python -m harness.trace_stats runs/<run-dir>/trace.jsonl
 ```
 
-Note: every run starts from the top, so this re-runs recon too.
+Note: every run starts from the top, so this re-runs recon too. The panel
+takes a few minutes: the three panelists judge each candidate at the same
+time, but each candidate waits for its slowest panelist.
 
 What did the panel kill? Did the panelists agree?
 
@@ -269,9 +279,11 @@ problem:
 - "Intended behaviour" and "sample data" excused a weakness that handed any
   caller something they should not have.
 
-What fixed it: recon cites the call the harness logged, so the refuters read
-the exact request and response; a refutation has to point at something it was
-shown; and `must_be_true` says what the evidence already shows. The next run's
+What fixed it: recon kept the call the harness logged with each observation,
+and `rank_candidate` copied it into the candidate, so the refuters read the
+exact request and response. None of that is automatic; it is code you write.
+Also: a refutation has to point at something it was shown, and `must_be_true`
+says what the evidence already shows. The next run's
 candidates survived 3 to 0 and 2 to 1.
 
 One panelist voted the right way for the wrong reason: it read the app's hidden
