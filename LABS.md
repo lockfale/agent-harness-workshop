@@ -80,6 +80,12 @@ target), `http_request`, `record_observation` and `finish`.
 Same file. It stores one observation where the triage role will find it,
 `ctx.state["observations"]`. The docstring says what to keep.
 
+> Hint: the refuters judge your observations later, with no tools. `evidence`
+> is the model's own account of what it saw. If an observation can also point
+> at the call that produced it, exactly as it was sent and answered, nobody
+> has to take the model's word for it. The recon tools are registered in
+> `build_registry`, and you can wrap them.
+
 ```
 python -m pytest harness/tests -q
 ```
@@ -168,12 +174,21 @@ anything; you write `SYSTEM_PROMPT` and `rank_candidate`, both marked
 
 > Hint: ask for the cheapest check that would prove each candidate wrong, not
 > just a score. A ranking nobody has to defend drifts toward whatever sounds
-> most dangerous.
+> most dangerous. Keep `must_be_true` to what the observation can already
+> show: the refuters cannot run anything, so a check that still needs running
+> belongs in `first_check`.
 
 ### Step 2: the refuter prompt
 
 Open `harness/roles/refute.py` and write `SYSTEM_PROMPT`. Ask for refutation,
 not review: each panelist's job is to disprove the candidate.
+
+> Hint: a refuter with no tools can kill any candidate by imagining a
+> defence ("the server might check a session"). Ask for a refutation that
+> points at something the panelist was shown: a status, header or field that
+> contradicts the claim. "By design" is not a reason if it hands a caller
+> something they should not have, and on a CTF target someone designed every
+> weakness.
 
 ### Step 3: run through the refuter panel
 
