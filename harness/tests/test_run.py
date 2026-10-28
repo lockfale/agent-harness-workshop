@@ -272,11 +272,16 @@ def test_recon_is_flagged_when_its_own_tools_bring_back_the_success_marker(tmp_p
 
     # The exploit stage bringing it back is the point of the exploit stage.
     pipeline.trace.event("tool_result", role="exploit", tool="shell",
-                         content={"stdout": "MARK{x}"})
+                         content={"stdout": "MARK{s3cr3t_v4lue}"})
+    assert recon.overstepped_into_exploit(pipeline) is False
+
+    # A script that checks for the marker is something recon read, not got.
+    pipeline.trace.event("tool_result", role="recon", tool="http_request",
+                         content={"body": "if (data.message.includes('MARK{')) { win(); }"})
     assert recon.overstepped_into_exploit(pipeline) is False
 
     pipeline.trace.event("tool_result", role="recon", tool="http_request",
-                         content={"body": "MARK{x}"})
+                         content={"body": '{"message": "MARK{s3cr3t_v4lue}"}'})
     assert recon.overstepped_into_exploit(pipeline) is True
 
 
