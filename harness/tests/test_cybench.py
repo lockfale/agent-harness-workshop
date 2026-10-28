@@ -85,6 +85,24 @@ def test_tasks_entries_are_keyed_by_the_slug(tmp_path):
     assert task.prompt.startswith("Easy version.")
 
 
+def test_a_task_entrys_own_prompt_replaces_the_benchmark_text(tmp_path):
+    adapter = LocalDockerAdapter(tasks={"flag-command": {"prompt": "Assess this app."}})
+    task = adapter.load(str(make_task_dir(tmp_path)))
+    assert task.prompt.startswith("Assess this app.")
+    assert "Find the flag" not in task.prompt
+    # The fixed target line is still appended.
+    assert "The target is web_flag:1337" in task.prompt
+    assert "HTB{" not in task.prompt
+
+
+def test_the_workshop_task_prompt_is_not_benchmark_framed():
+    from harness.cybench import TASKS
+
+    # The hostname is web_flag; the words around it should not be.
+    prompt = TASKS["flag-command"]["prompt"].lower().replace("web_flag", "")
+    assert "flag" not in prompt and "capture" not in prompt
+
+
 def test_scope_rules_key_on_the_slug(tmp_path):
     task = LocalDockerAdapter(tasks={}).load(str(make_task_dir(tmp_path)))
     gate = ScopeGate.from_dict(
