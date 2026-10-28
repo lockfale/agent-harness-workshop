@@ -22,6 +22,12 @@ What does work:
 - **Local Ollama** — two or three models pulled, if you would rather run
   everything on your own hardware.
 
+Anthropic and OpenAI models can refuse offensive security work, CTF tasks
+included, unless your account has completed that provider's cyber
+verification. A refused call shows up in the trace as `stop_reason`
+`content_filter`. Without verification, choose other models in
+`config/roles.yaml`.
+
 OpenRouter's free models (IDs ending in `:free`, and the `openrouter/free`
 router) will not carry you through the labs. On an unfunded account they are
 capped at 50 requests a day, and one full harness run can take more than that.
@@ -88,14 +94,16 @@ find `local/qwen3-coder`.
 
 ## 6. Docker, with the images built in advance
 
-Docker with Compose v2.24.4 or newer. Build the images now: about 1 GB in total,
-and building them live would cost the first ten minutes of the session.
+Docker with Compose v2.24.4 or newer. Build and pull the images now: about
+2.6 GB in total, and doing it live would cost the first ten minutes of the
+session.
 
 ```bash
 docker network inspect shared_net >/dev/null 2>&1 || docker network create --internal shared_net
 docker build -t harness-attacker:latest harness/attacker
 docker compose -p flag-command -f tasks/flag-command/docker-compose.yml build
 docker compose -p locktalk -f tasks/locktalk/docker-compose.yml build
+docker pull mcr.microsoft.com/playwright/mcp:v0.0.83
 ```
 
 `shared_net` is internal: the containers on it reach each other by name but
@@ -107,8 +115,11 @@ created `shared_net` before October 28, it can still reach the internet and
 docker network rm shared_net && docker network create --internal shared_net
 ```
 
-The first image is the container your agent works from. The other two are the
-targets.
+The first image is the container your agent works from, about 900 MB because
+it carries a headless browser for the recon lab. If you built it before
+October 28 it has no browser: run the `docker build` line again. The next two
+are the targets. The last, about 1 GB, is Microsoft's Playwright MCP server,
+the other half of the recon lab's browser comparison.
 
 ## 7. Check it
 

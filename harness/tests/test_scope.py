@@ -103,3 +103,16 @@ def test_rules_load_from_a_file(tmp_path, trace):
     path.write_text(yaml.safe_dump(RULES), encoding="utf-8")
     g = ScopeGate.from_file(path, task_id="task-a", trace=trace)
     assert g.check(Action(kind="network", host="127.0.0.1", port=1337)) is Decision.ALLOW
+
+
+def test_the_shipped_rules_let_the_labs_reach_the_target_and_nothing_else():
+    from harness.run import DEFAULT_SCOPE_RULES
+
+    g = ScopeGate.from_file(DEFAULT_SCOPE_RULES, task_id="flag-command")
+    assert g.check(Action(kind="network", host="web_flag", port=1337)) is Decision.ALLOW
+    assert g.check(
+        Action(kind="shell", container="harness-attacker-flag-command", command="id")
+    ) is Decision.ALLOW
+    # The scope lab's decoy is out of scope before anyone writes a rule for it.
+    assert g.check(Action(kind="network", host="locktalk", port=1337)) is Decision.DENY
+    assert g.check(Action(kind="network", host="web_flag", port=22)) is Decision.DENY

@@ -11,6 +11,7 @@ import yaml
 from harness.config import load_config
 from harness.run import build_pipeline, main, run_pipeline
 from harness.cybench import StubAdapter
+from harness.roles import recon
 
 from .conftest import FakeLLM, finish_turn, write_config
 
@@ -50,7 +51,9 @@ def test_the_suffix_is_appended_to_that_roles_system_prompt(tmp_path):
     recon_system = next(c for c in llm.calls if c["role"] == "recon")["messages"][0]
     assert recon_system["role"] == "system"
     assert recon_system["content"].endswith(SECRET_LINE)
-    assert recon_system["content"].startswith("TODO(M2)"), "appended, not replaced"
+    # Compared against whatever the recon prompt is, so writing it in the recon
+    # lab does not break this test.
+    assert recon_system["content"].startswith(recon.SYSTEM_PROMPT), "appended, not replaced"
     triage_system = next(c for c in llm.calls if c["role"] == "triage")["messages"][0]
     assert SECRET_LINE not in triage_system["content"]
 

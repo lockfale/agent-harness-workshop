@@ -31,7 +31,9 @@ not on the morning. No class time is spent on installation.
 | `config/` | `roles.yaml` (which model plays each role) and `prices.yaml` (what each model costs) |
 | `tasks/` | The two Cybench tasks the labs run against, copied from upstream |
 | `docs/` | Background reading, starting with how the ARC-AGI-3 competition harnesses compare to this one |
-| `mcp-skeleton/`, `harness-template/`, `scope-gate/`, `lab-data/` | Placeholders, not used yet |
+| `scope-gate/` | `rules.yaml`, the scope gate's rules. Loaded by default; the scope lab edits it |
+| `mcp-skeleton/` | A small MCP server for the recon lab: stdio transport, one worked tool, one for you to write |
+| `lab-data/` | Placeholder, not used yet |
 
 > **Status: scaffold.** Lab material is being filled in ahead of the session.
 

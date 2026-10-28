@@ -49,7 +49,8 @@ roles:
     # A panel, not one model. Majority refutation kills the candidate and
     # "uncertain" counts as refuted. Three lineages, none of them the
     # generator's: the candidates come from Sonnet, so no Anthropic model sits
-    # on this panel (P10).
+    # on this panel (P10). One outside model would satisfy P10; three are for
+    # the vote, from different families so they do not share one mistake.
     model: deepseek/deepseek-v4.1-flash
     panel:
       - deepseek/deepseek-v4.1-flash

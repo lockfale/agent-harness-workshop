@@ -252,10 +252,10 @@ def _console_prompt(action: Action) -> bool:  # pragma: no cover - needs a termi
     return answer in ("y", "yes")
 
 
-# TODO(M5): replace this with the rules in `scope-gate/rules.yaml` once the
-# multi-container Cybench task is chosen. One container is in scope, one is
-# not, and the lab is to point the agent at the wrong one and read the trace.
-# Until then the gate fails closed and `run.py` says so.
+# The fallback when no rules file is loaded: deny everything that leaves the
+# sandbox. `run.py` loads `scope-gate/rules.yaml` by default, and that file is
+# where the scope lab (M5) happens: one container is in scope, one is not, and
+# the lab is to point the agent at the wrong one and read the trace.
 DEFAULT_RULES: dict[str, Any] = {
     "default": "deny",
     "tasks": {},

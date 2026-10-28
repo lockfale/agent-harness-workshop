@@ -10,6 +10,8 @@ PyYAML>=6.0             # roles.yaml, prices.yaml, scope rules
 # Tests only.
 pytest>=8.0
 
-# Optional. Needed only for the M2 exercise that loads tools from an MCP
-# server over stdio. Everything else runs without it.
-# mcp>=1.2
+# The recon lab's MCP exercise: mcp-skeleton/server.py and the stdio loader
+# in harness/tools/mcp_stdio.py. Everything else runs without it. Held below 2:
+# mcp 2.x renamed FastMCP and the `inputSchema` and `isError` fields the
+# loader reads, so under 2.x every MCP tool would arrive with no schema.
+mcp>=1.26,<2

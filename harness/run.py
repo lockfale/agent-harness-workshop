@@ -48,6 +48,10 @@ from .trace import Trace, redact_text
 # status file so a failed start reads as an environment failure.
 SETUP_STAGE = "setup"
 
+# Loaded when --scope-rules is not given. Without it the gate falls back to
+# DEFAULT_RULES, which deny everything that leaves the sandbox.
+DEFAULT_SCOPE_RULES = Path(__file__).resolve().parent.parent / "scope-gate" / "rules.yaml"
+
 # Stages before the judge, in order. The judge is not in this list because
 # whether it runs at all is a decision, not a step.
 STAGE_FUNCS: list[tuple[str, Callable[[Pipeline], StageStatus]]] = [
@@ -469,7 +473,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="proof_tier an earlier run of this task reached; the gate will not go below it",
     )
-    parser.add_argument("--scope-rules", default=None, help="scope rules YAML (see scope-gate/)")
+    parser.add_argument(
+        "--scope-rules",
+        default=None,
+        help="scope rules YAML (default: scope-gate/rules.yaml)",
+    )
     parser.add_argument(
         "--non-interactive",
         action="store_true",
@@ -518,19 +526,23 @@ def main(argv: list[str] | None = None) -> int:
     interactive = not args.non_interactive
 
     trace = Trace(run_dir / "trace.jsonl")
+    scope_rules = args.scope_rules
+    if scope_rules is None and DEFAULT_SCOPE_RULES.is_file():
+        scope_rules = str(DEFAULT_SCOPE_RULES)
     scope = (
         ScopeGate.from_file(
-            args.scope_rules, task_id=task_id, interactive=interactive, trace=trace
+            scope_rules, task_id=task_id, interactive=interactive, trace=trace
         )
-        if args.scope_rules
+        if scope_rules
         else ScopeGate.from_dict(
             DEFAULT_RULES, task_id=task_id, interactive=interactive, trace=trace
         )
     )
     if not scope.rules:
         print(
-            "note: no scope rules matched this task, so the gate denies everything "
-            "that leaves the sandbox. Pass --scope-rules once scope-gate/ is filled in.",
+            f"note: no scope rules matched task {task_id!r}, so the gate denies "
+            "everything that leaves the sandbox. Add rules for it to "
+            f"{DEFAULT_SCOPE_RULES} or pass --scope-rules.",
             file=sys.stderr,
         )
 

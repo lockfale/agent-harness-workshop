@@ -55,7 +55,7 @@ Useful flags:
 | `--break-harness` | M4 lab. Kills the service after the readiness check, on purpose. |
 | `--adapter stub` | Runs the pipeline with no containers. Good for checking your wiring without pulling images. Default. |
 | `--adapter cybench` | The real adapter. Needs Docker, Compose 2.24.4 or newer, and a Cybench task directory. |
-| `--scope-rules <file>` | Scope rules for M5. Without it the gate denies everything that leaves the sandbox. |
+| `--scope-rules <file>` | Scope rules. Defaults to `scope-gate/rules.yaml`; with no rules for the task, the gate denies everything that leaves the sandbox. |
 | `--non-interactive` | Never prompt. The scope gate denies anything it would have asked a human about. |
 
 ## How a task runs
@@ -164,14 +164,15 @@ relative to the repository root:
   main task. Bring it up next to flag-command on `shared_net`:
 
 ```bash
-python -m harness.run --adapter cybench --task flag-command --with-task locktalk \
-    --scope-rules my-scope.yaml
+python -m harness.run --adapter cybench --task flag-command --with-task locktalk
 ```
 
 It comes up and goes down with the main task (also in the `finally`). Its
 containers are listed in `task.containers`, and nothing points a tool at it.
 
-A scope rules file for that lab, in the `scope-gate/` format:
+The gate loads `scope-gate/rules.yaml` unless you pass `--scope-rules`. It
+ships allowing only the target and the attacker shell. A version for the scope
+lab, with a named deny for the decoy:
 
 ```yaml
 default: deny
@@ -219,6 +220,11 @@ the model name exactly as that server lists it, and give it a row in
 `config/prices.yaml` at zero (`SETUP.md`, step 5). Either way only these
 strings change: attendees with two GPUs and attendees with twenty dollars of
 API credit run identical code.
+
+Anthropic and OpenAI models can refuse offensive security work, CTF tasks
+included, unless the account has completed that provider's cyber
+verification. The trace shows a refused call as `stop_reason=content_filter`
+with no tokens used. Read that before you blame your prompt.
 
 Every model name in `roles.yaml`, panel members included, must appear in
 `config/prices.yaml` or carry a local prefix. An unlisted model aborts the run
@@ -309,6 +315,16 @@ Each row is something that went wrong first and became a rule afterwards.
 | P9 | Read config once per run and echo the resolved result into the trace: model per role, base URL host, prices. | A long-lived process kept serving a stale model config. |
 | P10 | Whatever generates a candidate never solely judges it. Refuters use a different model lineage where you can arrange one. | Self-confirmation, and calibration damage in abliterated models. |
 
+### Why three refuters, not one
+
+One refuter from another lineage is enough to satisfy P10. The other two are
+for the vote. A single refuter's mistakes go straight through: a wrong "stands"
+passes a false positive, and a wrong "refuted" kills a real bug. With three, a
+candidate dies only when most of the panel refutes it, and `uncertain` counts
+as a refutation. The three come from different families because three copies
+of one model tend to make the same mistake, which is one opinion counted three
+times. An odd number means no ties.
+
 ### On abliterated models
 
 Do not put an abliterated model in the triage, refute or judge roles. The
@@ -371,15 +387,16 @@ In the harness, for you:
   predicate is what the negative-control rule turns on, so it is yours and not
   the model's.
 * `roles/judge.py`: the system prompt.
-* `gates/scope.py`: `DEFAULT_RULES` is empty, so the gate currently denies
-  everything. Point `--scope-rules` at your rules file for M5.
+* `scope-gate/rules.yaml`: the scope lab (M5). It ships allowing only the
+  target and the attacker shell, and `run.py` loads it by default.
 
 In the harness, for the facilitator:
 
-* `cybench.py`: the `TASKS` table is empty and no task id is hardcoded
-  anywhere. Container, target, probe and prompt come from the task directory,
-  so an entry needs only the negative-control input (`control_command`) and,
-  for M5, which second task is brought up as the out-of-scope target.
+* `cybench.py`: the `TASKS` table holds `flag-command` (the target for every
+  lab) and `locktalk` (the scope lab's decoy), and no task id is hardcoded
+  anywhere else. Container, target, probe and prompt come from the task
+  directory, so an entry needs only the negative-control input
+  (`control_command`) and whether the task is a decoy.
 * `config/prices.yaml`: every row was checked against OpenRouter's public
   models API on `prices_verified` (2026-10-26). Re-check before the session.
 * Not yet exercised live: a full run against a real Cybench task on Docker,

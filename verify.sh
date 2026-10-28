@@ -66,11 +66,22 @@ elif [ "$(docker network inspect -f '{{.Internal}}' shared_net 2>/dev/null)" = "
 else
   bad "network shared_net can reach the internet: docker network rm shared_net && docker network create --internal shared_net"
 fi
-for img in harness-attacker:latest flag-command-web_flag:latest locktalk-locktalk:latest; do
+for img in harness-attacker:latest flag-command-web_flag:latest locktalk-locktalk:latest \
+           mcr.microsoft.com/playwright/mcp:v0.0.83; do
   docker image inspect "$img" >/dev/null 2>&1 \
     && ok "image $img" \
-    || bad "image $img not built (see SETUP.md, step 6)"
+    || bad "image $img not built or pulled (see SETUP.md, step 6)"
 done
+# The recon lab's browser runs in the attacker image. An image built before
+# October 28 has no Playwright in it.
+if docker image inspect harness-attacker:latest >/dev/null 2>&1; then
+  if docker run --rm --network none harness-attacker:latest \
+       python -c 'import playwright' >/dev/null 2>&1; then
+    ok "attacker image has Playwright"
+  else
+    bad "attacker image has no Playwright: docker build -t harness-attacker:latest harness/attacker"
+  fi
+fi
 
 echo
 echo "Model access"
