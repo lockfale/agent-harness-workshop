@@ -4,6 +4,7 @@ the target container or the task directory."""
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,7 @@ import pytest
 from harness import cybench
 from harness.cybench import CybenchTask, LocalDockerAdapter, slugify
 from harness.gates.scope import ScopeGate
-from harness.tools.http import http_handler
+from harness.tools.http import HTTP_SCHEMA, http_handler
 from harness.tools.registry import ToolContext
 from harness.tools.shell import shell_handler
 
@@ -222,6 +223,18 @@ def test_http_request_goes_through_the_scope_gate_by_host_and_port(monkeypatch, 
 
     decisions = [e["decision"] for e in trace.of_kind("scope_decision")]
     assert decisions == ["deny", "deny", "allow"]
+
+
+def test_the_url_pattern_admits_a_whole_url_read_either_way():
+    # jsonschema searches a pattern; a provider that enforces the schema while
+    # decoding may require a full match. A real URL has to pass both readings,
+    # or the model is held to a bare "http://".
+    pattern = HTTP_SCHEMA["properties"]["url"]["pattern"]
+    for url in ("http://web_flag:1337/", "https://web_flag:1337/api/options?x=1"):
+        assert re.search(pattern, url)
+        assert re.fullmatch(pattern, url)
+    assert not re.fullmatch(pattern, "http://")
+    assert not re.search(pattern, "web_flag:1337/")
 
 
 def test_the_gate_does_not_parse_shell_commands(monkeypatch):

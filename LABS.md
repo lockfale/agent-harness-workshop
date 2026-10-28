@@ -120,7 +120,7 @@ to start from.
 
 **The official MCP server.** Microsoft publishes a Playwright MCP server with
 dozens of generic browser tools. It runs in its own container on `shared_net`,
-so it can reach the target by name. Add this to `tools()` in
+so it can reach the target by name. Add this to `build_registry()` in
 `harness/roles/recon.py`, where the `TODO(M2)` comment shows an example:
 
 ```

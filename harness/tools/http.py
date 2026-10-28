@@ -39,7 +39,10 @@ HTTP_SCHEMA: dict[str, Any] = {
         "method": {"type": "string", "enum": list(HTTP_METHODS)},
         "url": {
             "type": "string",
-            "pattern": "^https?://",
+            # Anchored at both ends on purpose. Some providers enforce tool
+            # schemas while decoding and read `pattern` as a full match, so
+            # "^https?://" alone lets the model emit only "http://".
+            "pattern": "^https?://\\S+$",
             "description": "Absolute http(s) URL. Use the target's hostname on the task network.",
         },
         "headers": {
