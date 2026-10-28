@@ -504,6 +504,29 @@ records only its name and hash. Run the same task with and without it, more
 than once each, and compare with `trace_stats`. One run per side is an
 anecdote.
 
+### Turns, tokens and the cliffs
+
+Where a run falls off as it gets longer, from this harness's own runs:
+
+- **Every turn resends everything.** A model call carries the whole
+  conversation so far, so input tokens grow with every turn. One recon run
+  took six turns and 48k input tokens, 28k of them cache reads. Keep the
+  system prompt identical across turns so it caches; the loop adds its own
+  notes as user turns for that reason.
+- **The output cap includes reasoning.** A role that hits `max_output_tokens`
+  mid-thought stops with `max_tokens`, and that turn bought nothing. Raise the
+  role's cap in `config/roles.yaml` before blaming the model.
+- **The turn cap loses whatever is unrecorded.** Record as you go; the loop
+  warns when three turns remain.
+- **Long runs drift.** On a harder task, recon's output grew from under 100 to
+  about 3,500 tokens a turn, it ignored its turn budget, and it recorded
+  nothing. Short stages that hand on short records hold up better than one
+  long one.
+
+The harness caps each tool result at 20,000 characters. How much evidence each
+observation keeps is yours to decide in `record_observation`: triage reads
+every observation in one prompt.
+
 ### Structure and prompt characteristics
 
 The role prompts in a production security harness look less like an essay and
