@@ -30,7 +30,7 @@ not on the morning. No class time is spent on installation.
 | `harness/` | The harness: roles, gates, tools and offline tests. The labs are the `TODO` markers in it; [harness/README.md](harness/README.md) maps them |
 | `config/` | `roles.yaml` (which model plays each role) and `prices.yaml` (what each model costs) |
 | `tasks/` | The two Cybench tasks the labs run against, copied from upstream |
-| `docs/` | Background reading, starting with how the ARC-AGI-3 competition harnesses compare to this one |
+| `docs/` | [Taking the harness to your own work](docs/your-own-harness.md) (red team, bug bounty, blue team), and how the ARC-AGI-3 competition harnesses compare to this one |
 | `scope-gate/` | `rules.yaml`, the scope gate's rules. Loaded by default; the scope lab edits it |
 | `mcp-skeleton/` | A small MCP server for the recon lab: stdio transport, one worked tool, one for you to write |
 | `lab-data/` | Placeholder, not used yet |

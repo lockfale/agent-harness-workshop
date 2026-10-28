@@ -385,6 +385,8 @@ problem.
   does nothing.
 * **Real targets.** Cybench only. Real use needs an allowlisted network first;
   see [The network](#the-network-internal-here-an-allowlist-for-real-use).
+  [docs/your-own-harness.md](../docs/your-own-harness.md) covers the rest:
+  authorization, scope rules, and red team, bug bounty and blue team use.
 * **Abliterated models in the three judging roles.** See above.
 
 ## What is still TODO
