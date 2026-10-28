@@ -338,6 +338,20 @@ confirmed bugs in files that had none, and it missed real CVEs. Both halves
 matter: a model that will not say no is not more thorough, it is less useful,
 and every one of these three roles exists to say no.
 
+Matt Suiche's [weightless](https://github.com/msuiche/weightless), which
+removes refusals at runtime with steering vectors instead of redistributing
+modified weights, shows one way the damage happens. Its
+[write-up](https://www.msuiche.com/posts/autoresearch-abliteration-without-redistributing-the-model/)
+separates two directions: refusal, which is a policy, and noticing that a
+request is under-specified, which is a capability. The second "looks identical
+by every measurement available without intervening", and ablating it "stops
+the model noticing when it lacks information, which is the machinery of
+confabulation." The write-up also checked its own scorer: falsifying every
+numeric, hex and version constant in 1,210 answers it had scored as delivered
+left all 1,210 labels unchanged. A benchmark that scores whether a model
+answered cannot tell you whether the answer was right, and that is the
+question every judging role is there to answer.
+
 Recon and exploit are a different question, and you may find a use for one
 there. The three judging roles are not negotiable.
 

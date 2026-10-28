@@ -67,6 +67,12 @@ Sources:
 - GEPA: Agrawal et al., "GEPA: Reflective Prompt Evolution Can Outperform
   Reinforcement Learning", [arXiv:2507.19457](https://arxiv.org/abs/2507.19457).
 - [scopebench](https://scopebench.ai/benchmarks), for the scope lab.
+- Matt Suiche's [weightless](https://github.com/msuiche/weightless) and its
+  [write-up](https://www.msuiche.com/posts/autoresearch-abliteration-without-redistributing-the-model/):
+  removing refusals can also remove the model's sense that it lacks
+  information, and a benchmark that scores delivery cannot see the
+  difference. See
+  [harness/README.md](harness/README.md#on-abliterated-models).
 - freed0m's
   [red team bench](https://betheadversary.com/posts/dgx_spark_red_team_bench/):
   every model tested was willing to help by default, so willingness tells you

@@ -203,6 +203,10 @@ outside model would satisfy that rule. The other two are for the vote:
 
 Do not put an abliterated model in triage, refute or the judge. Removing
 refusals also damages calibration, and these roles exist to say no.
+`harness/README.md` ("On abliterated models") has the measurements, and Matt
+Suiche's weightless write-up on one way it happens: the direction that lets a
+model notice it lacks information looks like refusal, and removing it makes
+the model confabulate.
 
 ### Optional stretch: more than one model for recon
 
