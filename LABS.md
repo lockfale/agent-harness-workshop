@@ -241,7 +241,8 @@ python -m harness.trace_stats runs/<run-dir>/trace.jsonl
 
 Note: every run starts from the top, so this re-runs recon too. The panel
 takes a few minutes: the three panelists judge each candidate at the same
-time, but each candidate waits for its slowest panelist.
+time, but each candidate waits for its slowest panelist. Only the three
+best-ranked candidates go to the panel; the trace notes any it did not judge.
 
 What did the panel kill? Did the panelists agree?
 
@@ -436,6 +437,14 @@ Every decision is in the trace:
 ```
 grep scope_decision runs/<run-dir>/trace.jsonl
 ```
+
+> Hint: no `network` decision in that grep? The agent used only the shell
+> (`curl`), which the gate sees as a shell command, not a connection. Tell it
+> to use `http_request` for the decoy too, and run again.
+
+Note: if you commented out the Playwright MCP line in `build_registry()` after
+the recon lab, put it back before this run. Otherwise Step 4's third finding,
+the browser that never asks the gate, will not show up.
 
 ### Step 4: what did the gate catch, and what did it miss?
 
