@@ -395,6 +395,23 @@ def _task_for_trace(task: Any) -> dict[str, Any]:
     return describe() if callable(describe) else {"task_id": getattr(task, "task_id", None)}
 
 
+def can_ask(non_interactive: bool, stdin: Any = None) -> bool:
+    """True when the harness may stop and ask a human.
+
+    A coding assistant that runs the command has no terminal on stdin, and
+    `input()` there raises EOFError or waits forever. With no terminal, behave
+    as `--non-interactive`: `--pause-after` stops at that stage, and the scope
+    gate denies anything it would have asked about.
+    """
+    if non_interactive:
+        return False
+    stdin = sys.stdin if stdin is None else stdin
+    try:
+        return bool(stdin.isatty())
+    except (AttributeError, ValueError):
+        return False
+
+
 def _continue_after(stage: str, pipeline: Pipeline) -> bool:
     """`--pause-after`: hold the run so a facilitator can look at it."""
     pipeline.trace.note(f"paused after {stage}", stage=stage)
@@ -523,7 +540,14 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as exc:
         print(f"\n{exc}\n", file=sys.stderr)
         return 2
-    interactive = not args.non_interactive
+    interactive = can_ask(args.non_interactive)
+    if not interactive and not args.non_interactive:
+        print(
+            "note: no terminal on stdin, so the harness will not ask. --pause-after "
+            "stops at that stage, and the scope gate denies anything it would have "
+            "asked about.",
+            file=sys.stderr,
+        )
 
     trace = Trace(run_dir / "trace.jsonl")
     scope_rules = args.scope_rules

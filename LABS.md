@@ -65,8 +65,10 @@ list of observations: facts you can point at, not conclusions.
 
 ### Step 1: write the recon prompt
 
-Open `harness/roles/recon.py` and read the docstring at the top. Then write
-`SYSTEM_PROMPT` where it says `TODO(M2)`.
+Open `harness/roles/recon.py` and read the docstring at the top. Before you
+write anything, run recon once with the placeholder prompt (the command in
+Step 3) and read the trace: that is what an agent with no instructions does.
+Then write `SYSTEM_PROMPT` where it says `TODO(M2)`, to fix what you saw.
 
 The tools the role has: `shell` (runs in the attacker container, next to the
 target), `http_request`, `record_observation` and `finish`.
@@ -84,7 +86,9 @@ Same file. It stores one observation where the triage role will find it,
 > is the model's own account of what it saw. If an observation can also point
 > at the call that produced it, exactly as it was sent and answered, nobody
 > has to take the model's word for it. The recon tools are registered in
-> `build_registry`, and you can wrap them.
+> `build_registry`, and you can wrap them. A new argument to
+> `record_observation` needs a field in `OBSERVATION_SCHEMA` too: the schema
+> rejects any property it does not list.
 
 ```
 python -m pytest harness/tests -q

@@ -9,7 +9,7 @@ import pytest
 from harness.config import load_config
 from harness.cybench import StubAdapter
 from harness.pricing import UnknownModelError, Usage
-from harness.run import build_pipeline, main, run_pipeline
+from harness.run import build_pipeline, can_ask, main, run_pipeline
 from harness.status import Outcome
 
 from .conftest import FakeLLM, finish_turn, tool_call, turn, write_config
@@ -220,6 +220,27 @@ def test_pause_after_stops_a_non_interactive_run_at_that_stage(tmp_path, capsys)
     assert result.judge_invoked is False
     assert pipeline.statuses.read("build") is None
     assert "paused after triage" in capsys.readouterr().out
+
+
+class _Terminal:
+    def isatty(self):
+        return True
+
+
+class _Pipe:
+    def isatty(self):
+        return False
+
+
+def test_with_no_terminal_the_harness_never_asks():
+    """A coding assistant running the command has no terminal to answer on."""
+    assert can_ask(False, _Pipe()) is False
+    assert can_ask(False, object()) is False
+
+
+def test_a_terminal_lets_the_harness_ask_unless_told_not_to():
+    assert can_ask(False, _Terminal()) is True
+    assert can_ask(True, _Terminal()) is False
 
 
 # --- fail fast on an unknown model ---------------------------------------
