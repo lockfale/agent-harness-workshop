@@ -93,6 +93,21 @@ def test_the_rendered_table_prints_the_last_stop_reason():
     assert recon_line.rstrip().endswith("end_turn")
 
 
+def test_overlapping_panelists_count_their_span_not_one_of_them():
+    trace = Trace(path=None)
+    trace.event("role_start", role="refute", model="a", ts=1.0)
+    trace.event("role_start", role="refute", model="b", ts=2.0)
+    trace.event("role_end", role="refute", status="completed", ts=6.0)
+    trace.event("role_end", role="refute", status="completed", ts=11.0)
+    # One after another, the next candidate's panel.
+    trace.event("role_start", role="refute", model="a", ts=12.0)
+    trace.event("role_end", role="refute", status="completed", ts=15.0)
+
+    roles, _ = collect(trace.events)
+
+    assert roles["refute"].wall_s == 10.0 + 3.0
+
+
 def test_a_probe_over_the_agents_network_is_not_called_weak():
     """build.py counts shared_net as strong evidence; the table must agree."""
     trace = Trace(path=None)

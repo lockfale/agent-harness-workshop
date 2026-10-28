@@ -240,7 +240,10 @@ class ScopeGate:
         self.decisions.append((action, decision, label))
         if self.trace is not None:
             self.trace.scope_decision(
-                action=action.as_dict(), decision=decision.value, rule=label
+                action=action.as_dict(),
+                decision=decision.value,
+                rule=label,
+                note=(rule.note if rule is not None else "") or None,
             )
         return decision
 

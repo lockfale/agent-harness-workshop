@@ -46,6 +46,11 @@ STAGE = "refute"
 # to run them one after another.
 PANEL_WORKERS = 3
 
+# How many of triage's candidates, best-ranked first, go to the panel. Each
+# costs three model calls; in the dry run six candidates took most of the
+# triage lab's twenty minutes.
+MAX_CANDIDATES = 3
+
 # TODO(M3): write this prompt.
 #
 # Ask the panelist to try to refute the candidate and to say `uncertain` when
@@ -182,6 +187,22 @@ def run(pipeline: Pipeline) -> StageStatus:
     candidates = pipeline.state.get("candidates") or []
     workers = max(1, min(PANEL_WORKERS, len(panel)))
 
+    # Only the best-ranked candidates are worth three model calls each. The
+    # rest are kept, marked as not judged, rather than quietly dropped.
+    ranked = sorted(
+        candidates,
+        key=lambda c: c.get("rank") if isinstance(c.get("rank"), (int, float)) else float("inf"),
+    )
+    judged, unjudged = ranked[:MAX_CANDIDATES], ranked[MAX_CANDIDATES:]
+    pipeline.state["unjudged"] = unjudged
+    if unjudged:
+        pipeline.trace.note(
+            f"only the top {MAX_CANDIDATES} of {len(candidates)} candidates go to the "
+            f"panel; the rest were not judged",
+            stage=STAGE,
+            unjudged=[c.get("claim") for c in unjudged],
+        )
+
     if len(panel) == 1:
         pipeline.trace.note(
             "the refuter panel has one model, so it is not independent of the "
@@ -193,7 +214,7 @@ def run(pipeline: Pipeline) -> StageStatus:
     results: list[PanelResult] = []
     halted: tuple[str, Any] | None = None
     pool = ThreadPoolExecutor(max_workers=workers) if workers > 1 else None
-    for candidate in candidates:
+    for candidate in judged:
         judgements: list[dict[str, Any]] = []
         if pool is not None:
             # The panelists are independent, so they judge at the same time.
@@ -265,10 +286,15 @@ def run(pipeline: Pipeline) -> StageStatus:
         StageStatus(
             stage=STAGE,
             outcome=Outcome.COMPLETED,
-            detail=f"{len(survivors)} of {len(candidates)} candidates survived the panel",
+            detail=(
+                f"{len(survivors)} of {len(judged)} candidates survived the panel"
+                + (f"; {len(unjudged)} lower-ranked not judged" if unjudged else "")
+            ),
             artifacts={
                 "panel": panel,
                 "candidates": len(candidates),
+                "judged": len(judged),
+                "unjudged": len(unjudged),
                 "survivors": len(survivors),
                 "independent_panel": len(panel) > 1,
             },

@@ -351,6 +351,24 @@ def test_panelists_judge_at_once_and_each_vote_stays_with_its_model(tmp_path, mo
     assert "_panel_judgement" not in pipeline.state
 
 
+def test_only_the_top_ranked_candidates_go_to_the_panel(tmp_path):
+    from harness.roles import refute
+
+    pipeline, _ = pipeline_for(tmp_path, FakeLLM(default=turn(
+        tool_call("record_judgement", {"judgement": "stands", "reason": "from the test"}))))
+    pipeline.state["candidates"] = [
+        {"claim": f"c{rank}", "rank": rank} for rank in (5, 2, 4, 1, 3)
+    ]
+
+    status = refute.run(pipeline)
+
+    judged = [r["claim"] for r in pipeline.state["panel_results"]]
+    assert judged == ["c1", "c2", "c3"]
+    assert [c["claim"] for c in pipeline.state["unjudged"]] == ["c4", "c5"]
+    assert status.artifacts["judged"] == 3 and status.artifacts["unjudged"] == 2
+    assert "2 lower-ranked not judged" in (status.detail or "")
+
+
 def test_a_panel_model_is_priced_too(tmp_path):
     """A model only ever used by the refuter panel still has to be in the table."""
     import yaml

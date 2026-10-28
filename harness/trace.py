@@ -246,8 +246,10 @@ class Trace:
                      **extra: Any) -> None:
         self.event("stage_status", stage=stage, outcome=outcome, detail=detail, **extra)
 
-    def scope_decision(self, *, action: dict[str, Any], decision: str, rule: str | None) -> None:
-        self.event("scope_decision", action=action, decision=decision, rule=rule)
+    def scope_decision(self, *, action: dict[str, Any], decision: str, rule: str | None,
+                       note: str | None = None) -> None:
+        # The matched rule's `note`, so a decision in the trace says why.
+        self.event("scope_decision", action=action, decision=decision, rule=rule, note=note)
 
     def readiness(self, *, target: str, method: str, ready: bool, detail: str | None = None,
                   **extra: Any) -> None:

@@ -26,6 +26,7 @@ def collect(events: Iterable[dict[str, Any]]) -> tuple[dict[str, RoleStats], dic
     roles: dict[str, RoleStats] = {}
     order: list[str] = []
     starts: dict[str, float] = {}
+    active: dict[str, int] = {}
     verdict_calls: dict[Any, dict[str, Any]] = {}
     run: dict[str, Any] = {
         "run_id": None,
@@ -58,12 +59,17 @@ def collect(events: Iterable[dict[str, Any]]) -> tuple[dict[str, RoleStats], dic
         elif kind == "role_start" and role:
             stats = role_for(role)
             stats.model = event.get("model") or stats.model
-            starts.setdefault(role, float(event.get("ts") or 0.0))
+            # Refuter panelists run at the same time. Wall time is the span
+            # the overlapping runs cover, not the sum and not just one of them.
+            if active.get(role, 0) == 0:
+                starts[role] = float(event.get("ts") or 0.0)
+            active[role] = active.get(role, 0) + 1
         elif kind == "role_end" and role:
             stats = role_for(role)
             stats.status = event.get("status") or stats.status
+            active[role] = max(0, active.get(role, 0) - 1)
             start = starts.get(role)
-            if start:
+            if active[role] == 0 and start:
                 stats.wall_s += max(0.0, float(event.get("ts") or start) - start)
                 starts.pop(role, None)
         elif kind == "model_response" and role:

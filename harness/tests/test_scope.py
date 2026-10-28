@@ -116,3 +116,20 @@ def test_the_shipped_rules_let_the_labs_reach_the_target_and_nothing_else():
     # The scope lab's decoy is out of scope before anyone writes a rule for it.
     assert g.check(Action(kind="network", host="locktalk", port=1337)) is Decision.DENY
     assert g.check(Action(kind="network", host="web_flag", port=22)) is Decision.DENY
+
+
+def test_a_rules_note_reaches_the_trace(trace):
+    """rules.yaml says a rule's note shows up next to the decision; make it so."""
+    rules = {
+        "default": "deny",
+        "tasks": {"task-a": {"deny": [{"kind": "network", "host": "decoy",
+                                       "note": "out of scope per the engagement"}]}},
+    }
+    gate = ScopeGate.from_dict(rules, task_id="task-a", trace=trace)
+
+    assert gate.check(Action(kind="network", host="decoy", port=1337)) is Decision.DENY
+    assert gate.check(Action(kind="network", host="elsewhere", port=80)) is Decision.DENY
+
+    named, default = trace.of_kind("scope_decision")
+    assert named["note"] == "out of scope per the engagement"
+    assert default["note"] is None
