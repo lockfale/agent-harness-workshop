@@ -179,10 +179,11 @@ model reads on every call, and what goes in the prompt.
   triage got an empty list. Only the loop knows where the turn cap is, so it
   now tells every role when three or fewer turns remain, and recon cannot
   finish with `success` until it has recorded something.
-- If recon's own tool results carry the task's success marker, recon used what
-  it found. The run goes on, but the harness prints a note, writes it to the
-  trace, and marks recon's status `overstepped`, so the next stage's head start
-  is visible.
+- If recon sends anything that does more than read (a POST, a form, `curl`
+  with data), the harness counts it, prints a note, writes it to the trace and
+  marks recon's status `overstepped`. It needs nothing task-specific, so it
+  works on a real target too. It makes overstepping visible; giving recon no
+  tool that can send is what prevents it.
 - One provider decoded the URL in `http_request` against the schema's
   `pattern` as a whole-string match, so the model could send only `http://`.
   The model fell back to curl and the run looked fine. A tool schema is a

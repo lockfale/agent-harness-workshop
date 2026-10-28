@@ -73,7 +73,9 @@ which is the safe way to fail.
 **Prompts are not boundaries.** In the workshop's own test runs, a recon prompt
 that said "do not exploit anything" did not stop the model from doing exactly
 that. Anything the authorization forbids has to be enforced in code: the gate,
-the proxy, the tool's own checks.
+the proxy, the tool's own checks. The harness counts recon's state-changing
+requests and marks the stage `overstepped`, which makes the problem visible;
+for live work, give the mapping role tools that cannot send at all.
 
 **Models and data.** Traces hold whatever the target returned, which on real
 work means client data. Treat a run directory as engagement evidence, and

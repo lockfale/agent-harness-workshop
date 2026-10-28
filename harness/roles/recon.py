@@ -166,45 +166,64 @@ def run(pipeline: Pipeline) -> StageStatus:
         ),
     )
     observations = pipeline.state.get("observations") or []
-    overstepped = overstepped_into_exploit(pipeline)
-    if overstepped:
+    # A prompt cannot hold recon to mapping while it has a shell, so the
+    # harness checks afterwards. The run goes on, but the status says so
+    # instead of handing the next stage a head start nobody can see.
+    changing = state_changing_requests(pipeline)
+    if changing:
         message = (
-            "recon's own tool results contain the task's success marker: it went "
-            "past mapping and used what it found, which is the exploit stage's job"
+            f"recon sent {changing} state-changing request(s) (not GET, HEAD or "
+            f"OPTIONS); mapping should only read, so it overstepped"
         )
-        pipeline.trace.note(message, stage=STAGE, overstepped=True)
+        pipeline.trace.note(message, stage=STAGE, state_changing_requests=changing)
         print(f"note: {message}.", file=sys.stderr)
     return pipeline.statuses.write(
-        outcome.to_status(STAGE, observations=len(observations), overstepped=overstepped)
+        outcome.to_status(
+            STAGE,
+            observations=len(observations),
+            overstepped=changing > 0,
+            state_changing_requests=changing,
+        )
     )
 
 
-def overstepped_into_exploit(pipeline: Pipeline) -> bool:
-    """Did recon's own tools bring back what only exploitation should?
+# Read-only HTTP methods. Anything else from recon is it acting, not mapping.
+READ_ONLY_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 
-    A prompt cannot hold recon to mapping while it has a shell, so the harness
-    checks afterwards: if any recon tool result carries the task's success
-    marker, recon used what it found. The run goes on, so the labs still work,
-    but the status says so instead of handing the next stage a head start.
+# A shell command that sends data or a non-read method with a common client.
+# A heuristic: it is there to make overstepping visible, not to parse every
+# way a shell can send a request. Restricting recon's tools is the real fix.
+_SHELL_SENDS = re.compile(
+    r"(-X\s*|--request[ =])(POST|PUT|PATCH|DELETE)\b"
+    r"|\s(-d|--data(-raw|-binary|-urlencode)?|-F|--form|--post-data|--post-file)[\s=]"
+    r"|--method[ =](POST|PUT|PATCH|DELETE)\b"
+    r"|requests\.(post|put|patch|delete)\(",
+    re.IGNORECASE,
+)
+
+
+def state_changing_requests(pipeline: Pipeline) -> int:
+    """How many requests recon sent that do more than read.
+
+    It needs nothing task-specific, so it works on any target. A POST is not
+    always an attack, so it is reported as a count for a person to read, not
+    as a verdict.
     """
-    marker = getattr(pipeline.task, "control_marker", None)
-    if not marker:
-        return False
-    pattern = success_pattern(marker)
-    return any(
-        event.get("role") == STAGE
-        and pattern.search(json.dumps(event.get("content"), default=str))
-        for event in pipeline.trace.of_kind("tool_result")
-    )
-
-
-def success_pattern(marker: str) -> re.Pattern[str]:
-    """What counts as recon having got the success marker, not just seen it.
-
-    A marker that opens a token, like a flag format ending in "{", counts only
-    with a body and its closing brace. A page that merely mentions the marker,
-    such as a script checking for it, is mapping, not using.
-    """
-    if marker.endswith("{"):
-        return re.compile(re.escape(marker) + r"[^}\s'\"`\\]{4,}\}")
-    return re.compile(re.escape(marker))
+    count = 0
+    for event in pipeline.trace.of_kind("tool_call"):
+        if event.get("role") != STAGE:
+            continue
+        arguments = event.get("arguments")
+        if isinstance(arguments, str):
+            try:
+                arguments = json.loads(arguments)
+            except json.JSONDecodeError:
+                arguments = {}
+        arguments = arguments if isinstance(arguments, dict) else {}
+        if event.get("tool") == "http_request":
+            if str(arguments.get("method", "GET")).upper() not in READ_ONLY_METHODS:
+                count += 1
+        elif event.get("tool") == "shell":
+            if _SHELL_SENDS.search(" " + str(arguments.get("command", ""))):
+                count += 1
+    return count

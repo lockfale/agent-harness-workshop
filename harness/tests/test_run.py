@@ -258,40 +258,29 @@ def test_an_unknown_model_fails_before_anything_is_spent(tmp_path):
     assert "prices.yaml" in message
 
 
-# --- recon that oversteps is flagged --------------------------------------
+# --- recon that sends more than reads is flagged --------------------------------------
 
 
-def test_recon_is_flagged_when_its_own_tools_bring_back_the_success_marker(tmp_path):
+def test_recon_state_changing_requests_are_counted_on_any_target(tmp_path):
+    """No success marker needed: a non-read request from recon is visible."""
     from harness.roles import recon
 
     pipeline, _ = pipeline_for(tmp_path, FakeLLM())
-    pipeline.task.control_marker = "MARK{"
-    pipeline.trace.event("tool_result", role="recon", tool="http_request",
-                         content={"body": "a page"})
-    assert recon.overstepped_into_exploit(pipeline) is False
+    calls = [
+        ("recon", "http_request", {"method": "GET", "url": "http://t/"}),
+        ("recon", "http_request", {"method": "POST", "url": "http://t/api"}),
+        ("recon", "shell", {"command": "curl -s http://t/app.js"}),
+        ("recon", "shell", {"command": "curl -X POST http://t/api -d '{\"a\":1}'"}),
+        ("recon", "shell", {"command": "curl --data-raw x=1 http://t/login"}),
+        ("recon", "shell", {"command": "python3 -c \"import requests; requests.post('http://t')\""}),
+        ("exploit", "http_request", {"method": "POST", "url": "http://t/api"}),
+    ]
+    for role, tool, arguments in calls:
+        pipeline.trace.tool_call(role=role, turn=0, tool=tool, call_id=None, arguments=arguments)
 
-    # The exploit stage bringing it back is the point of the exploit stage.
-    pipeline.trace.event("tool_result", role="exploit", tool="shell",
-                         content={"stdout": "MARK{s3cr3t_v4lue}"})
-    assert recon.overstepped_into_exploit(pipeline) is False
-
-    # A script that checks for the marker is something recon read, not got.
-    pipeline.trace.event("tool_result", role="recon", tool="http_request",
-                         content={"body": "if (data.message.includes('MARK{')) { win(); }"})
-    assert recon.overstepped_into_exploit(pipeline) is False
-
-    pipeline.trace.event("tool_result", role="recon", tool="http_request",
-                         content={"body": '{"message": "MARK{s3cr3t_v4lue}"}'})
-    assert recon.overstepped_into_exploit(pipeline) is True
-
-
-def test_no_marker_means_no_overstep_check(tmp_path):
-    from harness.roles import recon
-
-    pipeline, _ = pipeline_for(tmp_path, FakeLLM())
-    pipeline.task.control_marker = None
-    pipeline.trace.event("tool_result", role="recon", tool="shell", content={"stdout": "x"})
-    assert recon.overstepped_into_exploit(pipeline) is False
+    # The POST, curl -X POST, curl --data-raw and requests.post; not the reads,
+    # and not the exploit stage, whose job this is.
+    assert recon.state_changing_requests(pipeline) == 4
 
 
 # --- the refuter panel runs in parallel -----------------------------------
