@@ -482,7 +482,7 @@ records only its name and hash. Run the same task with and without it, more
 than once each, and compare with `trace_stats`. One run per side is an
 anecdote.
 
-### How production prompts are written
+### Structure and prompt characteristics
 
 The role prompts in a production security harness look less like an essay and
 more like a runbook:
