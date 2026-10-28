@@ -58,8 +58,10 @@ Your Docker Compose is older than 2.24.4. Update Docker.
 
 The provider refused the request before the model produced anything.
 Anthropic and OpenAI models can refuse offensive security work, CTF tasks
-included, unless your account has completed that provider's cyber
-verification. See SETUP.md, step 1. It is not your prompt.
+included, unless the account sending the request has completed that
+provider's cyber verification. For Anthropic, check that it is switched on
+for the workspace your API key belongs to; claude.ai status does not carry
+over. See SETUP.md, step 1. It is not your prompt.
 
 **`stop_reason` is `max_tokens`**
 

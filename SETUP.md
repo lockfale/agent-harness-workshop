@@ -10,9 +10,11 @@ The harness calls models programmatically and routes different roles to
 different models. That is the point of the exercise: the model that generates a
 finding must never be the one that judges it.
 
-**A subscription to a single vendor will not work.** It comes with no API
-credit and only reaches that vendor's own models, so a custom harness has
-nothing to point at.
+**A subscription to a single vendor will not work on its own.** Some include
+API credit (Claude Max adds monthly credit to a Claude Developer Platform
+account, for example), but that credit reaches only the vendor's own models.
+The harness needs more than one lineage: the refuters and the judge must not
+come from the family that found the candidate.
 
 What does work:
 
@@ -23,9 +25,12 @@ What does work:
   everything on your own hardware.
 
 Anthropic and OpenAI models can refuse offensive security work, CTF tasks
-included, unless your account has completed that provider's cyber
-verification. A refused call shows up in the trace as `stop_reason`
-`content_filter`. Without verification, choose other models in
+included, unless the account sending the request has completed that
+provider's cyber verification. Being approved is not the last step. Anthropic
+switches verification on per workspace in the Claude Developer Platform
+Console, for the API keys in that workspace, and a verified claude.ai account
+does not carry over to the API. A refused call shows up in the trace as
+`stop_reason` `content_filter`. Without verification, choose other models in
 `config/roles.yaml`.
 
 OpenRouter's free models (IDs ending in `:free`, and the `openrouter/free`
@@ -48,7 +53,8 @@ cd agent-harness-workshop
 ```
 
 Everything the labs need is in this clone, including the two Cybench tasks
-under `tasks/`. Run `git pull` the day before; small fixes will land up to then.
+under `tasks/`. Run `git pull` the evening before; small fixes will land up to
+then.
 
 ## 4. Python 3.11 or newer
 

@@ -222,8 +222,10 @@ strings change: attendees with two GPUs and attendees with twenty dollars of
 API credit run identical code.
 
 Anthropic and OpenAI models can refuse offensive security work, CTF tasks
-included, unless the account has completed that provider's cyber
-verification. The trace shows a refused call as `stop_reason=content_filter`
+included, unless the account sending the request has completed that
+provider's cyber verification. Anthropic switches it on per workspace in the
+Claude Developer Platform Console; claude.ai status does not carry over to the
+API. The trace shows a refused call as `stop_reason=content_filter`
 with no tokens used. Read that before you blame your prompt.
 
 Every model name in `roles.yaml`, panel members included, must appear in
