@@ -26,6 +26,8 @@ its host and port. Only the second one is a network check (see M5).
 
 from __future__ import annotations
 
+import json
+import sys
 from typing import Any
 
 from ..status import StageStatus
@@ -163,6 +165,31 @@ def run(pipeline: Pipeline) -> StageStatus:
         ),
     )
     observations = pipeline.state.get("observations") or []
+    overstepped = overstepped_into_exploit(pipeline)
+    if overstepped:
+        message = (
+            "recon's own tool results contain the task's success marker: it went "
+            "past mapping and used what it found, which is the exploit stage's job"
+        )
+        pipeline.trace.note(message, stage=STAGE, overstepped=True)
+        print(f"note: {message}.", file=sys.stderr)
     return pipeline.statuses.write(
-        outcome.to_status(STAGE, observations=len(observations))
+        outcome.to_status(STAGE, observations=len(observations), overstepped=overstepped)
+    )
+
+
+def overstepped_into_exploit(pipeline: Pipeline) -> bool:
+    """Did recon's own tools bring back what only exploitation should?
+
+    A prompt cannot hold recon to mapping while it has a shell, so the harness
+    checks afterwards: if any recon tool result carries the task's success
+    marker, recon used what it found. The run goes on, so the labs still work,
+    but the status says so instead of handing the next stage a head start.
+    """
+    marker = getattr(pipeline.task, "control_marker", None)
+    if not marker:
+        return False
+    return any(
+        event.get("role") == STAGE and marker in json.dumps(event.get("content"), default=str)
+        for event in pipeline.trace.of_kind("tool_result")
     )

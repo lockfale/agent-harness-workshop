@@ -13,6 +13,7 @@ model that was stuck or a model that was one tool call from the answer.
 from __future__ import annotations
 
 import dataclasses
+import threading
 from typing import Any
 
 from .pricing import PriceTable, Usage
@@ -67,6 +68,8 @@ class Budget:
         self.per_role_usd: dict[str, float] = {}
         self.per_role_usage: dict[str, Usage] = {}
         self.last_stop_reason: str | None = None
+        # The refuter panel charges from several threads at once.
+        self._lock = threading.RLock()
 
     def role_spent(self, role: str) -> float:
         return self.per_role_usd.get(role, 0.0)
@@ -92,22 +95,28 @@ class Budget:
         you will argue about later.
         """
         cost = self.prices.cost(model, usage)
-        self.spent_usd += cost
-        self.per_role_usd[role] = self.per_role_usd.get(role, 0.0) + cost
-        self.per_role_usage[role] = self.per_role_usage.get(role, Usage()) + usage
-        if stop_reason is not None:
-            self.last_stop_reason = stop_reason
+        with self._lock:
+            self.spent_usd += cost
+            self.per_role_usd[role] = self.per_role_usd.get(role, 0.0) + cost
+            self.per_role_usage[role] = self.per_role_usage.get(role, Usage()) + usage
+            if stop_reason is not None:
+                self.last_stop_reason = stop_reason
+            cumulative = self.spent_usd
 
         return Charge(
             role=role,
             model=model,
             usage=usage,
             cost_usd=cost,
-            cumulative_usd=self.spent_usd,
+            cumulative_usd=cumulative,
         )
 
     def enforce(self, role: str) -> None:
         """Raise BudgetExceeded if `role` or the run is over its cap."""
+        with self._lock:
+            self._enforce(role)
+
+    def _enforce(self, role: str) -> None:
         role_cap = self.role_caps_usd.get(role)
         if role_cap is not None and self.role_spent(role) > role_cap:
             self._record(f"role:{role}", self.role_spent(role), role_cap, breached=True)

@@ -14,6 +14,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import re
+import threading
 import time
 from pathlib import Path
 from typing import Any, Iterator
@@ -126,6 +127,8 @@ class Trace:
         self.max_result_chars = max_result_chars
         self._clock = clock
         self.events: list[dict[str, Any]] = []
+        # Refuter panelists write events from several threads at once.
+        self._lock = threading.Lock()
         if self.path is not None:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             self.path.touch()
@@ -135,10 +138,11 @@ class Trace:
     def event(self, kind: str, **fields: Any) -> dict[str, Any]:
         record = {"ts": self._clock(), "event": kind}
         record.update(fields)
-        self.events.append(record)
-        if self.path is not None:
-            with self.path.open("a", encoding="utf-8") as handle:
-                handle.write(json.dumps(record, default=str) + "\n")
+        with self._lock:
+            self.events.append(record)
+            if self.path is not None:
+                with self.path.open("a", encoding="utf-8") as handle:
+                    handle.write(json.dumps(record, default=str) + "\n")
         return record
 
     # -- the required event set ---------------------------------------------

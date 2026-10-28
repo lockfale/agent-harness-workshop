@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -254,6 +256,99 @@ def test_an_unknown_model_fails_before_anything_is_spent(tmp_path):
     message = str(caught.value)
     assert "vendor/not-in-the-table" in message
     assert "prices.yaml" in message
+
+
+# --- recon that oversteps is flagged --------------------------------------
+
+
+def test_recon_is_flagged_when_its_own_tools_bring_back_the_success_marker(tmp_path):
+    from harness.roles import recon
+
+    pipeline, _ = pipeline_for(tmp_path, FakeLLM())
+    pipeline.task.control_marker = "MARK{"
+    pipeline.trace.event("tool_result", role="recon", tool="http_request",
+                         content={"body": "a page"})
+    assert recon.overstepped_into_exploit(pipeline) is False
+
+    # The exploit stage bringing it back is the point of the exploit stage.
+    pipeline.trace.event("tool_result", role="exploit", tool="shell",
+                         content={"stdout": "MARK{x}"})
+    assert recon.overstepped_into_exploit(pipeline) is False
+
+    pipeline.trace.event("tool_result", role="recon", tool="http_request",
+                         content={"body": "MARK{x}"})
+    assert recon.overstepped_into_exploit(pipeline) is True
+
+
+def test_no_marker_means_no_overstep_check(tmp_path):
+    from harness.roles import recon
+
+    pipeline, _ = pipeline_for(tmp_path, FakeLLM())
+    pipeline.task.control_marker = None
+    pipeline.trace.event("tool_result", role="recon", tool="shell", content={"stdout": "x"})
+    assert recon.overstepped_into_exploit(pipeline) is False
+
+
+# --- the refuter panel runs in parallel -----------------------------------
+
+
+class PanelByModel:
+    """Answers by model, so the order the panelists run in cannot matter, and
+    counts how many panelists were mid-turn at once."""
+
+    VOTES = {"fake/a": "refuted", "fake/b": "stands", "fake/c": "stands"}
+
+    def __init__(self) -> None:
+        self.lock = threading.Lock()
+        self.active = 0
+        self.peak = 0
+
+    def complete(self, *, model, messages, role=None, **kwargs):
+        if any(m.get("role") == "tool" for m in messages):
+            return finish_turn("judged")
+        with self.lock:
+            self.active += 1
+            self.peak = max(self.peak, self.active)
+        time.sleep(0.2)
+        with self.lock:
+            self.active -= 1
+        return turn(tool_call("record_judgement",
+                              {"judgement": self.VOTES[model], "reason": "from the test"}))
+
+
+def test_panelists_judge_at_once_and_each_vote_stays_with_its_model(tmp_path, monkeypatch):
+    import yaml
+
+    from harness.roles import refute
+
+    monkeypatch.setattr(refute, "PANEL_WORKERS", 3)
+    roles_path = write_config(
+        tmp_path, extra_models={m: {"input": 0.0, "output": 0.0} for m in PanelByModel.VOTES}
+    )
+    roles = yaml.safe_load(roles_path.read_text(encoding="utf-8"))
+    roles["roles"]["refute"]["panel"] = list(PanelByModel.VOTES)
+    roles_path.write_text(yaml.safe_dump(roles), encoding="utf-8")
+    llm = PanelByModel()
+    pipeline = build_pipeline(
+        task_id="test-task",
+        config=load_config(roles_path=roles_path, run_budget_usd=5.0),
+        run_dir=tmp_path / "run",
+        adapter=StubAdapter(),
+        llm=llm,
+        interactive=False,
+    )
+    pipeline.state["candidates"] = [{"claim": "one", "rank": 1}, {"claim": "two", "rank": 2}]
+
+    refute.run(pipeline)
+
+    assert llm.peak > 1, "the panelists ran one after another"
+    for result in pipeline.state["panel_results"]:
+        # Read back in panel order, each vote with the model that cast it.
+        assert [(j["model"], j["judgement"]) for j in result["judgements"]] == list(
+            PanelByModel.VOTES.items()
+        )
+        assert result["killed"] is False
+    assert "_panel_judgement" not in pipeline.state
 
 
 def test_a_panel_model_is_priced_too(tmp_path):

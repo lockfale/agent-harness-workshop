@@ -124,6 +124,16 @@ def isolated_env(monkeypatch):
     monkeypatch.delenv("HARNESS_API_KEY", raising=False)
 
 
+@pytest.fixture(autouse=True)
+def serial_panel(monkeypatch):
+    """FakeLLM replays one script per role in order, which only works if the
+    refuter panelists take their turns one after another. The parallel panel
+    has its own test with a client that answers by model."""
+    from harness.roles import refute
+
+    monkeypatch.setattr(refute, "PANEL_WORKERS", 1)
+
+
 @pytest.fixture
 def prices() -> PriceTable:
     return PriceTable(

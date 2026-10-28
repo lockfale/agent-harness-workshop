@@ -31,14 +31,20 @@ What you fill in
 from __future__ import annotations
 
 import dataclasses
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from ..status import Outcome, StageStatus, is_infrastructure
 from ..tools.finish import register_finish
 from ..tools.registry import ToolContext, ToolRegistry, ToolResult
-from .base import Pipeline, run_role
+from .base import Pipeline, RoleOutcome, run_role
 
 STAGE = "refute"
+
+# Panelists judge each candidate at the same time, so a three-model panel takes
+# about as long as its slowest member rather than all three in a row. Set to 1
+# to run them one after another.
+PANEL_WORKERS = 3
 
 # TODO(M3): write this prompt.
 #
@@ -149,10 +155,32 @@ def opening_messages(pipeline: Pipeline, candidate: dict[str, Any]) -> list[dict
     ]
 
 
+def judge_once(
+    pipeline: Pipeline, candidate: dict[str, Any], model: str, max_turns: int
+) -> tuple[RoleOutcome, dict[str, Any] | None]:
+    """One panelist on one candidate, on its own copy of the stage state.
+
+    Panelists run at the same time, so each records its judgement into a
+    private copy; one panelist's vote can never land in another's slot.
+    """
+    private = dataclasses.replace(pipeline, state=dict(pipeline.state))
+    private.state.pop("_panel_judgement", None)
+    outcome = run_role(
+        role=STAGE,
+        pipeline=private,
+        registry=build_registry(private),
+        messages=opening_messages(private, candidate),
+        model=model,
+        max_turns=max_turns,
+    )
+    return outcome, (private.state.get("_panel_judgement") or {}).get(STAGE)
+
+
 def run(pipeline: Pipeline) -> StageStatus:
     config = pipeline.role_config(STAGE)
     panel = config.panel or [config.model]
     candidates = pipeline.state.get("candidates") or []
+    workers = max(1, min(PANEL_WORKERS, len(panel)))
 
     if len(panel) == 1:
         pipeline.trace.note(
@@ -164,18 +192,23 @@ def run(pipeline: Pipeline) -> StageStatus:
 
     results: list[PanelResult] = []
     halted: tuple[str, Any] | None = None
+    pool = ThreadPoolExecutor(max_workers=workers) if workers > 1 else None
     for candidate in candidates:
         judgements: list[dict[str, Any]] = []
-        for model in panel:
-            pipeline.state.pop("_panel_judgement", None)
-            outcome = run_role(
-                role=STAGE,
-                pipeline=pipeline,
-                registry=build_registry(pipeline),
-                messages=opening_messages(pipeline, candidate),
-                model=model,
-                max_turns=config.max_turns,
+        if pool is not None:
+            # The panelists are independent, so they judge at the same time.
+            # Results are read back in panel order, so the record does not
+            # depend on which one finished first.
+            futures = [
+                pool.submit(judge_once, pipeline, candidate, model, config.max_turns)
+                for model in panel
+            ]
+            answers = (future.result() for future in futures)
+        else:
+            answers = (
+                judge_once(pipeline, candidate, model, config.max_turns) for model in panel
             )
+        for model, (outcome, recorded) in zip(panel, answers):
             if halts_panel(outcome.outcome):
                 # A panelist that never got to judge is not a vote. A provider
                 # error, a crash, a protocol error or a budget breach stops the
@@ -183,7 +216,6 @@ def run(pipeline: Pipeline) -> StageStatus:
                 # pretending the candidates were weighed.
                 halted = (model, outcome)
                 break
-            recorded = (pipeline.state.get("_panel_judgement") or {}).get(STAGE)
             if recorded is None:
                 # A panelist that produced nothing usable is not a vote for
                 # the candidate. Record why and move on.
@@ -205,6 +237,8 @@ def run(pipeline: Pipeline) -> StageStatus:
                 stands_votes=stands,
             )
         )
+    if pool is not None:
+        pool.shutdown(wait=True)
 
     if halted is not None:
         model, outcome = halted
