@@ -23,16 +23,28 @@
 # The trace records only the file's basename and sha256, never the text. A
 # missing file stops the run at start. See harness/README.md.
 
+# max_output_tokens includes reasoning tokens. A reasoning model that hits the
+# cap stops mid-thought with stop_reason=max_tokens, and the turn's money buys
+# nothing. These caps leave room for DeepSeek's reasoning at each role's
+# effort. Every OpenRouter endpoint for these models allows at least 32768,
+# except one DeepSeek V4 Pro provider (16384). If a trace still shows
+# max_tokens on a turn, raise that role's cap before blaming the model.
+
 defaults:
-  max_output_tokens: 8192
+  max_output_tokens: 16384
   reasoning_effort: medium
   max_turns: 20
   budget_usd: 1.00        # per-role cap
 
 roles:
+  # The four generator roles are all DeepSeek, so the refuter panel and the
+  # judge below can stay clear of one lineage. Flash does the wide, cheap work
+  # (recon, triage). The full model takes the later phases, where one bad
+  # build or exploit attempt costs more than the tokens.
+
   recon:
-    model: anthropic/claude-sonnet-5.5
-    max_output_tokens: 8192
+    model: deepseek/deepseek-v4.1-flash
+    max_output_tokens: 16384
     reasoning_effort: medium
     max_turns: 24
     budget_usd: 1.50
@@ -40,7 +52,8 @@ roles:
   triage:
     # Deterministic dedup runs in code before this model is asked anything.
     # Do not point this role at an abliterated model. See README.
-    model: anthropic/claude-sonnet-5.5
+    model: deepseek/deepseek-v4.1-flash
+    max_output_tokens: 32768
     reasoning_effort: high
     max_turns: 8
     budget_usd: 0.50
@@ -48,28 +61,30 @@ roles:
   refute:
     # A panel, not one model. Majority refutation kills the candidate and
     # "uncertain" counts as refuted. Three lineages, none of them the
-    # generator's: the candidates come from Sonnet, so no Anthropic model sits
+    # generator's: the candidates come from DeepSeek, so no DeepSeek model sits
     # on this panel (P10). One outside model would satisfy P10; three are for
     # the vote, from different families so they do not share one mistake.
-    model: deepseek/deepseek-v4.1-flash
+    # A refuter that refuses or abstains votes "uncertain", which is a refute
+    # vote, so keep models that decline offensive material off this panel.
+    model: z-ai/glm-5.3-flash
     panel:
-      - deepseek/deepseek-v4.1-flash
       - z-ai/glm-5.3-flash
       - qwen/qwen3.6-35b-a3b
+      - minimax/minimax-m3
     reasoning_effort: medium
     max_turns: 4
     budget_usd: 0.75
 
   build:
-    model: anthropic/claude-sonnet-5.5
-    max_output_tokens: 16384
+    model: deepseek/deepseek-v4-pro-0813
+    max_output_tokens: 32768
     reasoning_effort: high
     max_turns: 24
     budget_usd: 2.00
 
   exploit:
-    model: anthropic/claude-sonnet-5.5
-    max_output_tokens: 16384
+    model: deepseek/deepseek-v4-pro-0813
+    max_output_tokens: 32768
     reasoning_effort: high
     max_turns: 32
     budget_usd: 2.00

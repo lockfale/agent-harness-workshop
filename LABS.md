@@ -191,7 +191,7 @@ What did the panel kill? Did the panelists agree?
 ### Why three refuters?
 
 The rule is that whatever generated a candidate never judges it alone, so the
-refuters come from other model families than the generator (Sonnet). One
+refuters come from other model families than the generator (DeepSeek). One
 outside model would satisfy that rule. The other two are for the vote:
 
 - A single refuter's mistakes go straight through. A wrong "stands" passes a
