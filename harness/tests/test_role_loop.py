@@ -166,6 +166,88 @@ def test_the_turn_limit_ends_the_role_as_incomplete(tmp_path, config, trace, stu
     assert outcome.turns == 3
 
 
+def test_the_role_is_told_when_few_turns_remain(tmp_path, config, trace, stub_task):
+    llm = FakeLLM(default=turn(tool_call("note", {"text": "again"})))
+    pipeline = make_pipeline(tmp_path, config, llm, trace, stub_task)
+
+    outcome = run_role(
+        role="recon",
+        pipeline=pipeline,
+        registry=registry_with(trace),
+        messages=[],
+        max_turns=5,
+    )
+
+    warnings = [m["content"] for m in outcome.messages
+                if m["role"] == "user" and "left." in m["content"]]
+    assert [w.split(" left.")[0] for w in warnings] == ["3 turns", "2 turns", "1 turn"]
+    assert all("unrecorded is lost" in w for w in warnings)
+    assert [n["remaining"] for n in trace.of_kind("note")
+            if n.get("message") == "turns remaining"] == [3, 2, 1]
+
+
+def test_a_finish_the_completion_check_refuses_goes_back_once(tmp_path, config, trace, stub_task):
+    """Saying it is done does not make it done."""
+    noted: list[str] = []
+
+    def handler(arguments, ctx):
+        noted.append(arguments["text"])
+        return ToolResult(content={"noted": arguments["text"]})
+
+    llm = FakeLLM({"recon": [finish_turn("nothing yet"),
+                             turn(tool_call("note", {"text": "x"})),
+                             finish_turn("now done")]})
+    pipeline = make_pipeline(tmp_path, config, llm, trace, stub_task)
+
+    outcome = run_role(
+        role="recon",
+        pipeline=pipeline,
+        registry=registry_with(trace, handler),
+        messages=[],
+        completion_check=lambda payload: None if noted else "nothing was noted",
+    )
+
+    assert outcome.outcome is Outcome.COMPLETED
+    assert outcome.finish["summary"] == "now done"
+    refused = [m for m in outcome.messages
+               if m["role"] == "tool" and "finish refused" in m["content"]]
+    assert len(refused) == 1
+
+
+def test_a_second_refused_finish_is_incomplete(tmp_path, config, trace, stub_task):
+    llm = FakeLLM(default=finish_turn("trust me"))
+    pipeline = make_pipeline(tmp_path, config, llm, trace, stub_task)
+
+    outcome = run_role(
+        role="recon",
+        pipeline=pipeline,
+        registry=registry_with(trace),
+        messages=[],
+        completion_check=lambda payload: "nothing was noted",
+    )
+
+    assert outcome.outcome is Outcome.INCOMPLETE
+    assert "nothing was noted" in (outcome.detail or "")
+    assert outcome.turns == 2
+
+
+def test_finish_with_no_result_is_not_refused(tmp_path, config, trace, stub_task):
+    """Nothing to record is an honest answer, not a missing one."""
+    llm = FakeLLM({"recon": [finish_turn("nothing here", outcome="no_result")]})
+    pipeline = make_pipeline(tmp_path, config, llm, trace, stub_task)
+
+    outcome = run_role(
+        role="recon",
+        pipeline=pipeline,
+        registry=registry_with(trace),
+        messages=[],
+        completion_check=lambda payload: "nothing was noted",
+    )
+
+    assert outcome.outcome is Outcome.COMPLETED
+    assert outcome.turns == 1
+
+
 def test_every_turn_records_a_stop_reason_and_usage(tmp_path, config, trace, stub_task):
     llm = FakeLLM({"recon": [turn(tool_call("note", {"text": "x"})), finish_turn()]})
     pipeline = make_pipeline(tmp_path, config, llm, trace, stub_task)

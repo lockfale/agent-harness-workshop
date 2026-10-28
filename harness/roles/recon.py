@@ -157,6 +157,10 @@ def run(pipeline: Pipeline) -> StageStatus:
         pipeline=pipeline,
         registry=build_registry(pipeline),
         messages=opening_messages(pipeline),
+        completion_check=lambda payload: (
+            None if pipeline.state.get("observations")
+            else "no observation was recorded, so triage would get nothing"
+        ),
     )
     observations = pipeline.state.get("observations") or []
     return pipeline.statuses.write(

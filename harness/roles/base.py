@@ -10,7 +10,7 @@ import dataclasses
 import json
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from ..budget import Budget, BudgetExceeded
 from ..config import HarnessConfig, RoleConfig
@@ -24,6 +24,15 @@ from ..trace import redact_text
 # Allow this many model turns that produce no tool call before giving up. One
 # nudge is fair; a second silence is an answer.
 MAX_SILENT_TURNS = 1
+
+# Tell the role how many turns it has left once this few remain. Only the loop
+# knows where the cap is; without the warning, a role that is still exploring
+# hits the limit with everything it found unrecorded.
+TURNS_WARNING = 3
+
+# A `finish` with outcome `success` that the role's completion check refuses
+# gets sent back this many times. After that the role is incomplete, not done.
+MAX_REFUSED_FINISHES = 1
 
 
 @dataclasses.dataclass
@@ -109,11 +118,17 @@ def run_role(
     messages: list[dict[str, Any]],
     model: str | None = None,
     max_turns: int | None = None,
+    completion_check: Callable[[dict[str, Any]], str | None] | None = None,
 ) -> RoleOutcome:
     """Drive one role until it calls `finish`, runs out, or breaks.
 
     Returns a RoleOutcome rather than raising, because every way this can end
     is a status the orchestrator has to branch on, including the ugly ones.
+
+    `completion_check` is the role's definition of done. It is called with the
+    payload of a `finish` whose outcome is `success`, and returns what is
+    missing, or None. A refused finish goes back to the model once; a second
+    one ends the role as incomplete. Saying it is done does not make it done.
     """
     registry.require_finish()
     config = pipeline.role_config(role)
@@ -137,6 +152,7 @@ def run_role(
     tool_calls = 0
     silent_turns = 0
     malformed_calls = 0
+    refused_finishes = 0
     last_stop_reason: str | None = None
 
     def done(outcome: Outcome, detail: str | None = None, finish: dict[str, Any] | None = None) -> RoleOutcome:
@@ -261,15 +277,43 @@ def run_role(
             )
             result = registry.call(name, arguments, ctx)
             tool_calls += 1
+            refusal = None
+            if result.finish and completion_check is not None:
+                if (result.payload or {}).get("outcome") == "success":
+                    refusal = completion_check(result.payload or {})
             trace.tool_result(
                 role=role,
                 turn=turns - 1,
                 tool=name,
                 call_id=call_id,
-                ok=result.ok,
+                ok=result.ok and refusal is None,
                 content=result.content,
-                error=result.error,
+                error=f"finish refused: {refusal}" if refusal else result.error,
             )
+
+            if refusal is not None:
+                refused_finishes += 1
+                messages.append(
+                    _tool_message(
+                        call_id,
+                        name,
+                        json.dumps(
+                            {
+                                "error": f"finish refused: {refusal}",
+                                "hint": "record what you found, then call finish "
+                                        "again, or finish with outcome no_result "
+                                        "if there is nothing to record",
+                            }
+                        ),
+                    )
+                )
+                if refused_finishes > MAX_REFUSED_FINISHES:
+                    return done(
+                        Outcome.INCOMPLETE,
+                        f"the role called finish with success, but {refusal}",
+                    )
+                continue
+
             messages.append(_tool_message(call_id, name, result.for_model()))
 
             if result.finish:
@@ -284,6 +328,20 @@ def run_role(
                     payload.get("summary"),
                     finish=payload,
                 )
+
+        remaining = limit - turns
+        if 0 < remaining <= TURNS_WARNING:
+            trace.note("turns remaining", role=role, remaining=remaining)
+            messages.append(
+                {
+                    "role": "user",
+                    "content": (
+                        f"{remaining} turn{'s' if remaining != 1 else ''} left. Record "
+                        f"anything you have not recorded yet, then call `finish`. When "
+                        f"the turns run out, anything unrecorded is lost."
+                    ),
+                }
+            )
 
     return done(
         Outcome.INCOMPLETE,
