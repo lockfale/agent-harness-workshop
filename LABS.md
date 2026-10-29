@@ -78,7 +78,7 @@ You don't need to know the whole harness. These are the only pieces the labs tou
 **A tool handler** looks like `def record_observation(arguments, ctx)`:
 
 - `arguments` is what the model sent, already checked against the tool's schema (`OBSERVATION_SCHEMA`, for example). A field the schema doesn't list is rejected before your code runs.
-- `ctx` holds what the handler needs besides the arguments. The one you'll use is `ctx.state`, the run's shared notebook: one Python dict that every stage of the run reads and writes. Recon appends to `ctx.state["observations"]`, and triage reads that same list.
+- `ctx` is short for context: a `ToolContext` (in `harness/tools/registry.py`) holding what the handler needs besides the arguments, namely the role name, the run's shared `state`, the task, the scope gate and the trace. It is not the model's conversation, which tool handlers never see. The one you'll use is `ctx.state`, the run's shared notebook: one Python dict that every stage of the run reads and writes. Recon appends to `ctx.state["observations"]`, and triage reads that same list.
 - It returns a `ToolResult`: `ToolResult(content=...)` when it worked, `ToolResult.failure("why")` when it didn't. The model sees either one.
 
 **Stages hand each other records, not transcripts.** When a role finishes, its conversation is thrown away. Only what its tools stored in `ctx.state` reaches the next stage, which is why `record_observation` matters.
@@ -96,6 +96,7 @@ You don't need to know the whole harness. These are the only pieces the labs tou
 
 | Name | Where | What it does |
 |---|---|---|
+| `ctx` | every tool handler | Short for context: the role name, the run's shared `state`, the task, the scope gate and the trace |
 | `finish` | every role | The only way a role ends: outcome `success`, `no_result` or `blocked`, with a summary |
 | `record_observation` | `recon.py` | Stores one fact recon saw in `ctx.state["observations"]` for triage |
 | `OBSERVATION_SCHEMA` | `recon.py` | The fields `record_observation` accepts. Anything else is rejected |
