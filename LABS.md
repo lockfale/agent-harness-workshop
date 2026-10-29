@@ -38,7 +38,7 @@ python -m pytest harness/tests -q
 ```
 
 Two commands you will use in every lab. The first runs the harness; the second
-summarises a run.
+summarizes a run.
 
 ```
 python -m harness.run --adapter cybench --task flag-command --budget-usd 2 --pause-after recon
@@ -121,7 +121,7 @@ You don't need to know the whole harness. These are the only pieces the labs tou
 | Short | Means |
 |---|---|
 | recon | Reconnaissance: mapping the target |
-| `TODO(M2)` and so on | An exercise marker. M is for module: M2 recon lab, M3 triage lab, M4 confirm lab, M5 scope lab |
+| `TODO(M2)` and so on | An exercise marker. M is for module: M2 recon lab, M3 triage and refute lab, M4 confirm lab, M5 scope lab |
 | MCP | Model Context Protocol: a standard way to plug tools into an agent. An MCP server offers tools, and `load_mcp_stdio` adds them |
 | stdio | Standard input and output. The MCP server talks to the harness through them instead of over the network |
 | `mcp_`, `pw_` | Prefixes the harness adds to MCP tool names. `pw` is Playwright, the browser |
@@ -330,7 +330,7 @@ Write the complete read_note in mcp-skeleton/server.py, following its comments. 
 
 ---
 
-## Triage lab: handoff and triage (20 min)
+## Triage and refute lab: handoff, triage and the refuter panel (20 min)
 
 Recon output is long and noisy. Triage removes duplicates in plain code, then a
 model ranks what is left and has to defend each rank. A panel of three other
@@ -364,7 +364,7 @@ Open `harness/roles/refute.py` and write `SYSTEM_PROMPT`. Ask for refutation,
 not review: each panelist's job is to disprove the candidate.
 
 > Hint: a refuter with no tools can reject any candidate by imagining a
-> defence ("the server might check a session"). Ask for a refutation that
+> defense ("the server might check a session"). Ask for a refutation that
 > points at something the panelist was shown: a status, header or field that
 > contradicts the claim. "By design" is not a reason if it hands a caller
 > something they should not have.
@@ -422,7 +422,7 @@ problem:
 - The observation was the model's own account of a request. With the request
   itself missing, "we cannot tell whether credentials were sent" is a fair
   objection.
-- "Intended behaviour" and "sample data" excused a weakness that handed any
+- "Intended behavior" and "sample data" excused a weakness that handed any
   caller something they should not have.
 
 What fixed it: recon kept the call the harness logged with each observation,
@@ -494,7 +494,7 @@ Open `harness/roles/exploit.py`. Write `SYSTEM_PROMPT`, then
 
 The harness runs the negative control itself: an ordinary request every
 visitor makes. `control_triggered()` decides whether that benign request
-triggered the behaviour you are claiming. If it did, your exploit proves
+triggered the behavior you are claiming. If it did, your exploit proves
 nothing.
 
 > Hint: `control_triggered()` is handed the task's `marker`, its success

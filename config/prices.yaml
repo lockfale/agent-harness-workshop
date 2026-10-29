@@ -3,7 +3,7 @@
 # This table is the only place the harness learns what a model costs. There is
 # no default price and no fallback guess: a model that is not listed here, and
 # does not carry a local prefix, aborts the run at startup. That is deliberate.
-# A budget guard that invents a price for a model it does not recognise will
+# A budget guard that invents a price for a model it does not recognize will
 # eventually invent a frontier price for a cheap model and kill a long run at
 # roughly sixty times its real cost.
 #

@@ -247,11 +247,11 @@ The motivating example is Adrian Wood's GEPA "operational discipline" prompt
 for security agents: a short list of imperative principles, evolved with GEPA
 (reflective prompt evolution over execution traces). The reported improvement
 from 53% to as high as 77% solve rate is **in-sample**: it is the score on the
-task set the prompt was optimised against, a training score, not a held-out
+task set the prompt was optimized against, a training score, not a held-out
 result. Treat it as a reason to test the idea, not as evidence it transfers.
 This repository does not ship that prompt or any other.
 
-The A/B is the M6 demo:
+To run the A/B yourself:
 
 ```bash
 # arm A: no suffix
@@ -313,7 +313,7 @@ Each row is something that went wrong first and became a rule afterwards.
 | P5 | Cost comes from a price table you can audit. Unknown models are an error, not a guess. Local models cost nothing. Gateway prefixes are stripped before lookup. | A budget guard priced an unknown model at a frontier default and aborted a run at about 60x its real cost. |
 | P6 | Infrastructure failure means unconfirmed, and the judge is skipped. Build, harness, environment and timeout failures never reach a judge. | Real bugs discarded as false negatives. |
 | P7 | Probe readiness at the real service socket (from the attacker container over `shared_net`), not at a forwarded port and not by trusting a healthcheck. | Rootless port forwarders complete the TCP handshake with a dead service. |
-| P8 | Record stop reasons and per-turn usage. Never summarise a run as "N tool calls" without them. | "57k tokens, zero tool calls" read as a model that would not act, when it was about to act. |
+| P8 | Record stop reasons and per-turn usage. Never summarize a run as "N tool calls" without them. | "57k tokens, zero tool calls" read as a model that would not act, when it was about to act. |
 | P9 | Read config once per run and echo the resolved result into the trace: model per role, base URL host, prices. | A long-lived process kept serving a stale model config. |
 | P10 | Whatever generates a candidate never solely judges it. Refuters use a different model lineage where you can arrange one. | Self-confirmation, and calibration damage in abliterated models. |
 
@@ -401,7 +401,7 @@ In the harness, for you:
 * `roles/build.py`: the system prompt, and anything the task needs before the
   exploit role starts.
 * `roles/exploit.py`: the system prompt, and `control_triggered()`, which
-  decides what counts as the benign input having triggered the behaviour. That
+  decides what counts as the benign input having triggered the behavior. That
   predicate is what the negative-control rule turns on, so it is yours and not
   the model's.
 * `roles/judge.py`: the system prompt.

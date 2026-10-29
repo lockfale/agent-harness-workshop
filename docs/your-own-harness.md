@@ -132,7 +132,7 @@ conclusion never judges it alone.
 | recon | Gathers context, read-only: alerts, logs, asset and identity data. An MCP server with read-only credentials is the recon lab's pattern |
 | triage | Deduplicates alerts in code, then ranks them by what the evidence shows |
 | refute | False-positive elimination. Each panelist tries to explain the alert away, from the logs it was shown |
-| build, exploit | For detection engineering: reproduce the behaviour in a lab with your emulation tooling. The negative control is ordinary activity that must not fire the detection |
+| build, exploit | For detection engineering: reproduce the behavior in a lab with your emulation tooling. The negative control is ordinary activity that must not fire the detection |
 | judge | Decides whether the detection fires and the alert is real, from the recorded evidence |
 
 * Response actions (isolating a host, disabling an account) change production.

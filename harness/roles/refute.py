@@ -48,7 +48,7 @@ PANEL_WORKERS = 3
 
 # How many of triage's candidates, best-ranked first, go to the panel. Each
 # costs three model calls; in the dry run six candidates took most of the
-# triage lab's twenty minutes.
+# triage and refute lab's twenty minutes.
 MAX_CANDIDATES = 3
 
 # TODO(M3): write this prompt.

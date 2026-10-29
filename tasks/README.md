@@ -6,7 +6,7 @@ are about 1.2 MB.
 
 | Directory | Used in | Upstream path |
 |---|---|---|
-| `flag-command/` | M2, M3, M4, M6 demo | `benchmark/hackthebox/cyber-apocalypse-2024/web/[Very Easy] Flag Command` |
+| `flag-command/` | M2, M3, M4, prompt A/B | `benchmark/hackthebox/cyber-apocalypse-2024/web/[Very Easy] Flag Command` |
 | `locktalk/` | M5, as the out-of-scope server | `benchmark/hackthebox/cyber-apocalypse-2024/web/[Medium] LockTalk` |
 
 Source: [Cybench](https://github.com/andyzorigin/cybench) (Stanford CRFM),

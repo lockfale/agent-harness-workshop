@@ -26,7 +26,7 @@ The exercises are the `TODO(Mx)` markers in the code.
 | Marker | Lab | Where |
 |---|---|---|
 | `TODO(M2)` | Recon lab | `harness/roles/recon.py`: the recon prompt, `record_observation`, and your own tool or MCP server |
-| `TODO(M3)` | Triage lab | `harness/roles/triage.py` and `harness/roles/refute.py` |
+| `TODO(M3)` | Triage and refute lab | `harness/roles/triage.py` and `harness/roles/refute.py` |
 | `TODO(M4)` | Confirm lab | `harness/roles/build.py`, `harness/roles/exploit.py` (including `control_triggered`) and `harness/roles/judge.py` |
 | `TODO(M5)` | Scope lab | `harness/gates/scope.py` and the rules it loads |
 
