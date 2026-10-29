@@ -192,8 +192,13 @@ def register_stdio_tools(
     env: dict[str, str] | None = None,
     prefix: str = "",
     timeout: float = 30.0,
+    only: list[str] | None = None,
 ) -> list[str]:
-    """Start the server, register every tool it advertises, return their names.
+    """Start the server, register the tools it advertises, return their names.
+
+    `only` is an allowlist of the server's own tool names (no prefix). None
+    registers everything. A name the server does not offer is an error, so a
+    typo cannot quietly leave a role without a tool, or with more than meant.
 
     The server keeps running after this returns. Each registered tool sends
     its calls to it, with `timeout` seconds per call.
@@ -205,6 +210,16 @@ def register_stdio_tools(
     except BaseException:
         session.close()
         raise
+    if only is not None:
+        offered = {tool.name for tool in tools}
+        unknown = sorted(set(only) - offered)
+        if unknown:
+            session.close()
+            raise ValueError(
+                f"MCP server {command!r} offers no tool named {', '.join(unknown)}; "
+                f"it offers: {', '.join(sorted(offered))}"
+            )
+        tools = [tool for tool in tools if tool.name in set(only)]
     registered: list[str] = []
 
     for tool in tools:

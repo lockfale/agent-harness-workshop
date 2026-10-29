@@ -133,6 +133,12 @@ pip install "mcp>=1.26,<2"
 The server took too long. A browser can be slow to start; pass `timeout=60`
 to `load_mcp_stdio`.
 
+**`MCP server 'docker' offers no tool named ...`**
+
+A name in your `only=` list is not one the server offers. The message lists
+the names it does offer. Use them without your `prefix`: `browser_navigate`,
+not `pw_browser_navigate`.
+
 **The Playwright MCP server cannot reach `web_flag`**
 
 It has to run on `shared_net`. Check the `--network shared_net` argument in

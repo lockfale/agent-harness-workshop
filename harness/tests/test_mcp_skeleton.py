@@ -49,3 +49,19 @@ def test_missing_argument_never_reaches_the_server(registry):
     result = registry.call("mcp_search_notes", {}, ToolContext(role="recon"))
     assert not result.ok
     assert "term" in result.error
+
+
+def test_an_allowlist_registers_only_the_tools_named():
+    registry = ToolRegistry(role="recon")
+    names = registry.load_mcp_stdio(
+        sys.executable, [str(SERVER)], prefix="mcp_", only=["search_notes"]
+    )
+    assert names == ["mcp_search_notes"]
+    assert registry.names() == ["mcp_search_notes"]
+
+
+def test_an_allowlist_name_the_server_lacks_is_an_error():
+    registry = ToolRegistry(role="recon")
+    with pytest.raises(ValueError, match="offers no tool named serch_notes"):
+        registry.load_mcp_stdio(sys.executable, [str(SERVER)], only=["serch_notes"])
+    assert registry.names() == []

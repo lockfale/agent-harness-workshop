@@ -132,7 +132,16 @@ so it can reach the target by name. Add this to `build_registry()` in
 registry.load_mcp_stdio("docker", ["run", "-i", "--rm", "--init", "--network", "shared_net", "mcr.microsoft.com/playwright/mcp:v0.0.83"], prefix="pw_", timeout=60)
 ```
 
-Run recon once with each. Then compare the two traces:
+**Trim it.** Those 25 tools include `browser_click`, `browser_fill_form`,
+`browser_file_upload` and `browser_run_code_unsafe`: tools that change things
+or run code, which is not recon's job. `only=` registers just the tools you
+name, using the server's names without the prefix:
+
+```
+registry.load_mcp_stdio("docker", ["run", "-i", "--rm", "--init", "--network", "shared_net", "mcr.microsoft.com/playwright/mcp:v0.0.83"], prefix="pw_", timeout=60, only=["browser_navigate", "browser_snapshot", "browser_network_requests", "browser_console_messages", "browser_take_screenshot"])
+```
+
+Run recon once with each. Then compare the traces:
 
 - Which tools did the agent call, and how many times?
 - Which run recorded more useful observations? Which cost more?

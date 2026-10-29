@@ -259,20 +259,26 @@ class ToolRegistry:
         env: dict[str, str] | None = None,
         prefix: str = "",
         timeout: float = 30.0,
+        only: list[str] | None = None,
     ) -> list[str]:
-        """Register every tool an MCP server offers over stdio.
+        """Register the tools an MCP server offers over stdio.
 
         The point of this hook is that MCP tools come through the same door as
         local ones: the server's declared `inputSchema` becomes the registry's
         schema, so a remote tool with a sloppy schema is rejected by the same
         validator, before the call leaves this process.
 
+        `only` is an allowlist of the server's tool names, without the prefix.
+        A role should get the tools its job needs, not everything a server
+        happens to offer. None registers them all.
+
         Needs the optional `mcp` dependency. Pair it with `mcp-skeleton/`.
         """
         from .mcp_stdio import register_stdio_tools
 
         return register_stdio_tools(
-            self, command=command, args=args or [], env=env, prefix=prefix, timeout=timeout
+            self, command=command, args=args or [], env=env, prefix=prefix,
+            timeout=timeout, only=only,
         )
 
 
