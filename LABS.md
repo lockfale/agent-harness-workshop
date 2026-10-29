@@ -87,7 +87,7 @@ target), `http_request`, `record_observation` and `finish`.
 Prompt for your coding assistant:
 
 ```text
-Read the TODO(M2) comments above SYSTEM_PROMPT in harness/roles/recon.py and the hints in LABS.md recon Step 1. Then write the complete SYSTEM_PROMPT for the recon role. I'm asking for the full answer. Recon maps and records, it does not exploit: record facts with evidence as observations, record any exposed secret but never use it, call finish when the target is mapped, about 15 turns.
+Read the TODO(M2) comments above SYSTEM_PROMPT in harness/roles/recon.py and the hints in LABS.md recon Step 1. Then write the complete SYSTEM_PROMPT for the recon role. I'm asking for the full answer. Recon maps and records, it does not exploit: record facts with evidence as observations, record any exposed secret but never use it, call finish when the target is mapped, about 15 turns. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### Step 2: implement `record_observation`
@@ -110,7 +110,7 @@ python -m pytest harness/tests -q
 Prompt for your coding assistant:
 
 ```text
-Write the complete record_observation in harness/roles/recon.py, following its docstring. I'm asking for the full answer. Also wrap the shell and http_request tools in build_registry so every call is logged with a call_id, let record_observation take a call_id and attach that logged call, and add call_id to OBSERVATION_SCHEMA. Then add a line to the recon SYSTEM_PROMPT telling it to pass the call_id of the result that shows each fact. Fix any imports you need. Then run python -m pytest harness/tests -q.
+Write the complete record_observation in harness/roles/recon.py, following its docstring. I'm asking for the full answer. Also wrap the shell and http_request tools in build_registry so every call is logged with a call_id, let record_observation take a call_id and attach that logged call, and add call_id to OBSERVATION_SCHEMA. Then add a line to the recon SYSTEM_PROMPT telling it to pass the call_id of the result that shows each fact. Fix any imports you need. Then run python -m pytest harness/tests -q. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### Step 3: run recon on its own
@@ -167,15 +167,15 @@ Run recon once with each. Then compare the traces:
 Prompts for your coding assistant, one per run:
 
 ```text
-Add a short paragraph to the end of the recon SYSTEM_PROMPT telling it how to render a page with Playwright from the shell, using harness/attacker/BROWSER.md, and what to record from the rendered page.
+Add a short paragraph to the end of the recon SYSTEM_PROMPT telling it how to render a page with Playwright from the shell, using harness/attacker/BROWSER.md, and what to record from the rendered page. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ```text
-Remove the Playwright paragraph you just added to the recon prompt. Then add the Playwright MCP line from LABS.md recon Step 4 to build_registry in harness/roles/recon.py, just before register_finish.
+Remove the Playwright paragraph you just added to the recon prompt. Then add the Playwright MCP line from LABS.md recon Step 4 to build_registry in harness/roles/recon.py, just before register_finish. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ```text
-Change that Playwright MCP line to the trimmed version from LABS.md recon Step 4, with only= set to browser_navigate, browser_snapshot, browser_network_requests, browser_console_messages and browser_take_screenshot.
+Change that Playwright MCP line to the trimmed version from LABS.md recon Step 4, with only= set to browser_navigate, browser_snapshot, browser_network_requests, browser_console_messages and browser_take_screenshot. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### Step 5: write your own MCP server
@@ -212,7 +212,7 @@ model reads on every call, and what goes in the prompt.
 Prompt for your coding assistant:
 
 ```text
-Write the complete read_note in mcp-skeleton/server.py, following its comments. I'm asking for the full answer. Then load the server in recon's build_registry the way LABS.md recon Step 5 shows, and add a line to the end of the recon SYSTEM_PROMPT telling it to find the rules of engagement with mcp_search_notes and read that note with mcp_read_note before it touches the target. Run the tests.
+Write the complete read_note in mcp-skeleton/server.py, following its comments. I'm asking for the full answer. Then load the server in recon's build_registry the way LABS.md recon Step 5 shows, and add a line to the end of the recon SYSTEM_PROMPT telling it to find the rules of engagement with mcp_search_notes and read that note with mcp_read_note before it touches the target. Run the tests. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### What testing showed
@@ -272,7 +272,7 @@ anything; you write `SYSTEM_PROMPT` and `rank_candidate`, both marked
 Prompt for your coding assistant:
 
 ```text
-Write the complete triage SYSTEM_PROMPT and rank_candidate in harness/roles/triage.py, following the TODO comments and the hints in LABS.md triage Step 1. I'm asking for the full answer. rank_candidate must reject a dedup_key that isn't in the list and copy the source observation into the candidate. Run the tests.
+Write the complete triage SYSTEM_PROMPT and rank_candidate in harness/roles/triage.py, following the TODO comments and the hints in LABS.md triage Step 1. I'm asking for the full answer. rank_candidate must reject a dedup_key that isn't in the list and copy the source observation into the candidate. Run the tests. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### Step 2: the refuter prompt
@@ -289,7 +289,7 @@ not review: each panelist's job is to disprove the candidate.
 Prompt for your coding assistant:
 
 ```text
-Write the complete refuter SYSTEM_PROMPT in harness/roles/refute.py, following the TODO comment and the hint in LABS.md triage Step 2. I'm asking for the full answer. Run the tests.
+Write the complete refuter SYSTEM_PROMPT in harness/roles/refute.py, following the TODO comment and the hint in LABS.md triage Step 2. I'm asking for the full answer. Run the tests. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### Step 3: run through the refuter panel
@@ -401,7 +401,7 @@ goalposts after seeing the output.
 Prompt for your coding assistant:
 
 ```text
-Write the complete build SYSTEM_PROMPT in harness/roles/build.py, following the TODO comment and LABS.md confirm Step 1. I'm asking for the full answer.
+Write the complete build SYSTEM_PROMPT in harness/roles/build.py, following the TODO comment and LABS.md confirm Step 1. I'm asking for the full answer. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### Step 2: the exploit prompt and the negative control
@@ -422,7 +422,7 @@ nothing.
 Prompt for your coding assistant:
 
 ```text
-Write the complete exploit SYSTEM_PROMPT and control_triggered in harness/roles/exploit.py, following the TODO comments and LABS.md confirm Step 2. I'm asking for the full answer. control_triggered must use its marker argument, and treat a control that didn't run cleanly as triggered. Run the tests.
+Write the complete exploit SYSTEM_PROMPT and control_triggered in harness/roles/exploit.py, following the TODO comments and LABS.md confirm Step 2. I'm asking for the full answer. control_triggered must use its marker argument, and treat a control that didn't run cleanly as triggered. Run the tests. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### Step 3: the judge prompt
@@ -443,7 +443,7 @@ table; the judge never sets it.
 Prompt for your coding assistant:
 
 ```text
-Write the complete judge SYSTEM_PROMPT in harness/roles/judge.py, following the TODO comment and LABS.md confirm Step 3. I'm asking for the full answer. Run the tests.
+Write the complete judge SYSTEM_PROMPT in harness/roles/judge.py, following the TODO comment and LABS.md confirm Step 3. I'm asking for the full answer. Run the tests. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### Step 4: the full run
@@ -516,7 +516,7 @@ unanswered question is not consent.
 Prompt for your coding assistant:
 
 ```text
-In scope-gate/rules.yaml, under flag-command, add a named deny for host locktalk with the note "decoy task, out of scope", and an ask for host host.docker.internal with the note "the host machine; a human decides".
+In scope-gate/rules.yaml, under flag-command, add a named deny for host locktalk with the note "decoy task, out of scope", and an ask for host host.docker.internal with the note "the host machine; a human decides". Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### Step 3: attack your own gate
@@ -549,7 +549,7 @@ the browser that never asks the gate, will not show up.
 Prompt for your coding assistant:
 
 ```text
-Add a line to the end of the recon SYSTEM_PROMPT saying the service at locktalk:1337 is also part of this assessment: map it as well as web_flag:1337, use http_request for HTTP to both hosts, and open http://locktalk:1337/ with pw_browser_navigate. Keep the trimmed Playwright MCP line in build_registry.
+Add a line to the end of the recon SYSTEM_PROMPT saying the service at locktalk:1337 is also part of this assessment: map it as well as web_flag:1337, use http_request for HTTP to both hosts, and open http://locktalk:1337/ with pw_browser_navigate. Keep the trimmed Playwright MCP line in build_registry. Make only these changes: no other edits, no refactors, don't run the harness, and reply in two lines.
 ```
 
 ### Step 4: what did the gate catch, and what did it miss?
