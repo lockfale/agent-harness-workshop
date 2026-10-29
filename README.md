@@ -6,6 +6,8 @@ judging, then find out where these systems fail and why.
 
 **[un]prompted — online, October 27–29, 2026**
 
+Slides: [docs/workshop-slides.pdf](docs/workshop-slides.pdf). Every step and command is in [LABS.md](LABS.md).
+
 ## What you'll build
 
 - A harness that routes different roles to different models, because the model
