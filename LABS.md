@@ -116,6 +116,26 @@ You don't need to know the whole harness. These are the only pieces the labs tou
 | `overstepped` | recon status | Recon sent a request that changes something (not GET, HEAD or OPTIONS) |
 | `trace_stats` | `harness/trace_stats.py` | Prints a run's summary table: turns, tokens, cost, status, last stop reason |
 
+**Shorthand used in the labs:**
+
+| Short | Means |
+|---|---|
+| recon | Reconnaissance: mapping the target |
+| `TODO(M2)` and so on | An exercise marker. M is for module: M2 recon lab, M3 triage lab, M4 confirm lab, M5 scope lab |
+| MCP | Model Context Protocol: a standard way to plug tools into an agent. An MCP server offers tools, and `load_mcp_stdio` adds them |
+| stdio | Standard input and output. The MCP server talks to the harness through them instead of over the network |
+| `mcp_`, `pw_` | Prefixes the harness adds to MCP tool names. `pw` is Playwright, the browser |
+| dedup | Deduplicate: remove duplicates |
+| venv | A Python virtual environment, the `.venv` folder |
+| repo, config | This repository; configuration, as in `config/roles.yaml` |
+| YAML, JSON, JSONL | File formats. JSONL is one JSON record per line, which is how the trace is stored |
+| curl | A command-line tool for sending web requests, which the agent runs in its shell |
+| GET, HEAD, OPTIONS, POST | Kinds of web request. The first three only read; POST sends data |
+| URL, HTTP, API, REST, JS | Web address; the web's request protocol; an interface a program offers; a style of web API; JavaScript |
+| PATH | The list of folders your shell looks in for commands |
+| `tool_use`, `max_tokens`, `content_filter` | Stop reasons. About to call a tool; ran out of room for output; the provider blocked the request |
+| GLM, Qwen, MiniMax, DeepSeek, Gemini | Model families from different vendors |
+
 Every `TODO` comment says what's expected, and `python -m pytest harness/tests -q` checks the plumbing after each change. Using a coding assistant? Point it at the `TODO` and the step here; the prompts at the end of each step do that.
 
 ---
