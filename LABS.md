@@ -87,7 +87,7 @@ target), `http_request`, `record_observation` and `finish`.
 Prompt for your coding assistant:
 
 ```text
-Write the complete SYSTEM_PROMPT for the recon role in harness/roles/recon.py. I'm asking for the full answer. Recon maps and records, it does not exploit: record facts with evidence as observations, record any exposed secret but never use it, call finish when the target is mapped, about 15 turns.
+Read the TODO(M2) comments above SYSTEM_PROMPT in harness/roles/recon.py and the hints in LABS.md recon Step 1. Then write the complete SYSTEM_PROMPT for the recon role. I'm asking for the full answer. Recon maps and records, it does not exploit: record facts with evidence as observations, record any exposed secret but never use it, call finish when the target is mapped, about 15 turns.
 ```
 
 ### Step 2: implement `record_observation`
