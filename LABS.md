@@ -217,7 +217,7 @@ model reads on every call, and what goes in the prompt.
 
 Recon output is long and noisy. Triage removes duplicates in plain code, then a
 model ranks what is left and has to defend each rank. A panel of three other
-models then tries to kill each candidate.
+models then tries to disprove each candidate.
 
 ### Step 1: the triage prompt and `rank_candidate`
 
@@ -240,7 +240,7 @@ anything; you write `SYSTEM_PROMPT` and `rank_candidate`, both marked
 Open `harness/roles/refute.py` and write `SYSTEM_PROMPT`. Ask for refutation,
 not review: each panelist's job is to disprove the candidate.
 
-> Hint: a refuter with no tools can kill any candidate by imagining a
+> Hint: a refuter with no tools can reject any candidate by imagining a
 > defence ("the server might check a session"). Ask for a refutation that
 > points at something the panelist was shown: a status, header or field that
 > contradicts the claim. "By design" is not a reason if it hands a caller
@@ -260,7 +260,7 @@ takes a few minutes: the three panelists judge each candidate at the same
 time, but each candidate waits for its slowest panelist. Only the three
 best-ranked candidates go to the panel; the trace notes any it did not judge.
 
-What did the panel kill? Did the panelists agree?
+What did the panel reject? Did the panelists agree?
 
 ### Why three refuters?
 
@@ -269,8 +269,8 @@ refuters come from other model families than the generator (DeepSeek). One
 outside model would satisfy that rule. The other two are for the vote:
 
 - A single refuter's mistakes go straight through. A wrong "stands" passes a
-  false positive, and a wrong "refuted" kills a real bug.
-- With three, a candidate dies only when most of the panel refutes it, and
+  false positive, and a wrong "refuted" drops a real bug.
+- With three, a candidate is dropped only when most of the panel refutes it, and
   `uncertain` counts as refuted.
 - They are three different families because three copies of one model tend
   to make the same mistake. An odd number means no ties.
@@ -320,6 +320,16 @@ questions, GPT-5.5 solved 36 and GLM 5.3 solved 40, and together they solved
   model, and pool the observations. Triage already removes duplicates in code,
   so the overlap collapses for free, and triage gets a noisier pile that is
   worth ranking.
+
+### Optional stretch: a bigger panel and a referee
+
+Three refuters and a majority is the smallest panel with a vote. If you add
+judges, do not let the bar grow with the panel: two judges who agree, each
+pointing at the evidence, is usually enough to treat a candidate as a
+finding. Then decide what settles a split: a referee agent that reads the
+disagreeing reasons and rules, or a plain function, such as ties going to
+`refuted`. The vote is `aggregate()` in `harness/roles/refute.py`, and the
+panel's models are the `panel:` list under `refute` in `config/roles.yaml`.
 
 ---
 
@@ -507,6 +517,20 @@ of a cent per call, but it can be talked out of its answer.
 you at the terminal. Replace it with a function that asks a model, then attack
 both layers. The rules break on host tricks (raw IPs, redirects, alternate
 names). The model breaks on injected text.
+
+Jev is one ready-made judge for this: a small model, reachable through
+OpenRouter, that returns a typed answer with a probability.
+
+### Optional stretch: an allowlisting proxy
+
+The gate judges the harness's own tools. A proxy judges every connection,
+including `curl` from the shell and the Playwright MCP browser, the two that
+got past the gate in Step 3. Put the attacker and the MCP container on an
+internal network whose only way out is a proxy that allows just the hosts in
+scope; [harness/README.md](harness/README.md#the-network-internal-here-an-allowlist-for-real-use)
+describes the layout. Then run Step 3's attack again. The layers end up as:
+the proxy for limits nothing can argue with, rules in code for what you
+wrote down, and a model judge for the long tail.
 
 ---
 
