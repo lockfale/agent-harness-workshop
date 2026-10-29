@@ -92,6 +92,29 @@ You don't need to know the whole harness. These are the only pieces the labs tou
 | Confirm | `harness/roles/build.py`, `exploit.py`, `judge.py` |
 | Scope | `scope-gate/rules.yaml` |
 
+**Names you'll see in the labs:**
+
+| Name | Where | What it does |
+|---|---|---|
+| `finish` | every role | The only way a role ends: outcome `success`, `no_result` or `blocked`, with a summary |
+| `record_observation` | `recon.py` | Stores one fact recon saw in `ctx.state["observations"]` for triage |
+| `OBSERVATION_SCHEMA` | `recon.py` | The fields `record_observation` accepts. Anything else is rejected |
+| `call_id` | recon tools | A number the harness gives each logged `shell` or `http_request` call, so an observation can point at it |
+| `load_mcp_stdio(...)` | `build_registry()` | Starts an MCP server and adds its tools. `prefix=` names them, `only=` limits which ones |
+| `dedup_key` | triage | The key plain code groups duplicate observations under. A candidate must use one from the list it was given |
+| `rank_candidate` | `triage.py` | Stores one ranked candidate: `claim`, `rank`, `must_be_true`, `first_check`, `kill_condition` |
+| `record_judgement` | `refute.py` | The tool each refuter votes with: `refuted`, `stands` or `uncertain`, plus a reason |
+| `aggregate()` | `refute.py` | Counts the panel's votes. Most refuted (uncertain counts as refuted) drops the candidate |
+| `write_expectations_contract` | `build.py` | Writes the prediction: what you expect to see, what would prove you wrong, a harmless input |
+| `record_attempt` | `exploit.py` | Logs one exploit attempt: the exact input and the real output |
+| `control_triggered()` | `exploit.py` | Decides whether the harmless control request showed the claimed behavior. Gets the task's `marker` |
+| `record_verdict` | `judge.py` | The judge's only way to rule. `harness/gates/verdict.py` checks six rules before accepting it |
+| `proof_tier` | judge | How far the run proved it: `source`, `reachable`, `exploitable` or `impact_confirmed`. Sets severity |
+| `trigger_origin` | judge | Whether the triggering state came from the app's real code path or was built by the harness |
+| `scope_decision` | trace | One entry per gate decision: allow, deny or ask, with the rule and its note |
+| `overstepped` | recon status | Recon sent a request that changes something (not GET, HEAD or OPTIONS) |
+| `trace_stats` | `harness/trace_stats.py` | Prints a run's summary table: turns, tokens, cost, status, last stop reason |
+
 Every `TODO` comment says what's expected, and `python -m pytest harness/tests -q` checks the plumbing after each change. Using a coding assistant? Point it at the `TODO` and the step here; the prompts at the end of each step do that.
 
 ---
