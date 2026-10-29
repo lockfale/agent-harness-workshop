@@ -447,6 +447,10 @@ Note: if you commented out the Playwright MCP line in `build_registry()` after
 the recon lab, put it back before this run. Otherwise Step 4's third finding,
 the browser that never asks the gate, will not show up.
 
+> Hint: no `pw_` calls in the trace, even with the MCP line in? The agent
+> preferred `curl`. Name the tool in your prompt: tell it to open
+> `http://locktalk:1337/` with `pw_browser_navigate`, and run again.
+
 ### Step 4: what did the gate catch, and what did it miss?
 
 - An `http_request` to `locktalk` is denied, with your rule named in the
