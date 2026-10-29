@@ -38,7 +38,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from ..cybench import container_health
+from ..cybench import container_health, kill_container
 from ..status import Outcome, StageStatus
 from ..tools.finish import register_finish
 from ..tools.registry import ToolContext, ToolRegistry, ToolResult
@@ -335,10 +335,12 @@ def break_service(pipeline: Pipeline) -> str:
     if not container:
         return "no container to break, so the failure is simulated at the status level"
     try:
-        docker_exec(container, "kill -9 1 2>/dev/null || true", timeout_s=10)
-        return f"killed pid 1 inside {container}"
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as exc:
+        killed, error = kill_container(container)
+    except (FileNotFoundError, OSError) as exc:
         return f"tried to kill the service in {container} and could not: {exc}"
+    if not killed:
+        return f"tried to kill the service in {container} and could not: {error or 'docker kill failed'}"
+    return f"killed {container}"
 
 
 def build_registry(pipeline: Pipeline) -> ToolRegistry:

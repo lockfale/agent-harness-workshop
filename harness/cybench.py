@@ -690,6 +690,16 @@ def container_health(container: str) -> str | None:
     return status or None
 
 
+def kill_container(container: str) -> tuple[bool, str]:
+    """SIGKILL a container from the host. Returns (killed, docker's error text).
+
+    From the host, not with `kill` inside it: a container's PID 1 ignores
+    SIGKILL sent from inside its own PID namespace, so that kill does nothing.
+    """
+    proc = _run("kill", container, check=False)
+    return proc.returncode == 0, (proc.stderr or "").strip()
+
+
 def adapter_named(name: str, with_tasks: list[str] | tuple[str, ...] = ()) -> CybenchAdapter:
     """`stub` or `cybench`."""
     if name == "stub":

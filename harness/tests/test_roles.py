@@ -6,7 +6,9 @@ pieces attendees do not have to write, so they are the pieces that need tests.
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -14,7 +16,13 @@ from harness.cybench import CybenchTask
 from harness.gates.verdict import Evidence
 from harness.roles import refute as refute_role
 from harness.roles import triage as triage_role
-from harness.roles.build import Readiness, check_readiness, contract_path, write_contract
+from harness.roles.build import (
+    Readiness,
+    break_service,
+    check_readiness,
+    contract_path,
+    write_contract,
+)
 from harness.roles.judge import record_verdict
 from harness.tools.registry import ToolContext
 
@@ -155,6 +163,36 @@ def test_no_probe_and_no_port_means_readiness_is_unknown(trace):
     assert result.method == "none"
     assert result.ready is False
     assert Readiness(ready=True, method="none").weak is True
+
+
+def test_break_harness_kills_the_container_from_the_host(monkeypatch):
+    # A kill inside the container cannot stop its PID 1, so it must be docker kill.
+    calls = []
+
+    def fake_run(*argv, check=True, cwd=None):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    monkeypatch.setattr("harness.cybench._run", fake_run)
+    pipeline = SimpleNamespace(task=CybenchTask(task_id="t", container="t-web"))
+
+    assert break_service(pipeline) == "killed t-web"
+    assert calls == [("kill", "t-web")]
+
+
+def test_break_harness_says_so_when_the_kill_fails(monkeypatch):
+    monkeypatch.setattr(
+        "harness.cybench._run",
+        lambda *argv, check=True, cwd=None: subprocess.CompletedProcess(
+            argv, 1, "", "Error response from daemon: container t-web is not running"
+        ),
+    )
+    pipeline = SimpleNamespace(task=CybenchTask(task_id="t", container="t-web"))
+
+    detail = break_service(pipeline)
+
+    assert detail.startswith("tried to kill the service in t-web and could not")
+    assert "is not running" in detail
 
 
 # --- build: the contract writer -------------------------------------------
