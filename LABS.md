@@ -110,7 +110,7 @@ python -m pytest harness/tests -q
 Prompt for your coding assistant:
 
 ```text
-Write the complete record_observation in harness/roles/recon.py, following its docstring. I'm asking for the full answer. Also wrap the shell and http_request tools in build_registry so every call is logged with a call_id, let record_observation take a call_id and attach that logged call, and add call_id to OBSERVATION_SCHEMA. Fix any imports you need. Then run python -m pytest harness/tests -q.
+Write the complete record_observation in harness/roles/recon.py, following its docstring. I'm asking for the full answer. Also wrap the shell and http_request tools in build_registry so every call is logged with a call_id, let record_observation take a call_id and attach that logged call, and add call_id to OBSERVATION_SCHEMA. Then add a line to the recon SYSTEM_PROMPT telling it to pass the call_id of the result that shows each fact. Fix any imports you need. Then run python -m pytest harness/tests -q.
 ```
 
 ### Step 3: run recon on its own
