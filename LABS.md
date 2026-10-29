@@ -95,6 +95,11 @@ Read the TODO(M2) comments above SYSTEM_PROMPT in harness/roles/recon.py and the
 Same file. It stores one observation where the triage role will find it,
 `ctx.state["observations"]`. The docstring says what to keep.
 
+`ctx.state` is the run's shared notebook: one Python dict that every stage of
+the run reads and writes. Recon appends to `ctx.state["observations"]`, and
+when triage starts it reads that same list. Recon's conversation is thrown
+away, so this list is all triage ever sees.
+
 > Hint: the refuters judge your observations later, with no tools. `evidence`
 > is the model's own account of what it saw. If an observation can also point
 > at the call that produced it, exactly as it was sent and answered, nobody
