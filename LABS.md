@@ -472,7 +472,7 @@ The gate here is rules in code. Rules cannot be argued with, but they miss
 anything nobody wrote down. A model judge covers that long tail for a fraction
 of a cent per call, but it can be talked out of its answer.
 
-- Adrian Wood's talk on a production agent pipeline described a small
+- Adrian Wood's talk "Hackbots!" described a small
   decision model answering allow, deny or ask on every verification call
   against a live target (GLM 5.2 at the time).
 - Claude Code's auto mode uses a classifier on every tool call. Anthropic
