@@ -62,6 +62,40 @@ Using a coding assistant? Start it in this folder (for Claude Code, `claude`). [
 
 ---
 
+## How the code fits together (read this first)
+
+You don't need to know the whole harness. These are the only pieces the labs touch.
+
+**One run** goes through the stages in order: recon, triage, refute, build, exploit, judge. `harness/run.py` drives it; you never edit it.
+
+**Each stage is one file** in `harness/roles/`, and each file has the same parts:
+
+- `SYSTEM_PROMPT`: the instructions that role's model gets. Most `TODO`s are here.
+- Tool handlers: plain Python functions the model can call, such as `record_observation` in `recon.py` or `rank_candidate` in `triage.py`.
+- `build_registry()`: the list of tools that role is given. Add a tool here and the model can use it.
+- `run()`: plumbing that runs the role. You don't edit it.
+
+**A tool handler** looks like `def record_observation(arguments, ctx)`:
+
+- `arguments` is what the model sent, already checked against the tool's schema (`OBSERVATION_SCHEMA`, for example). A field the schema doesn't list is rejected before your code runs.
+- `ctx` holds what the handler needs besides the arguments. The one you'll use is `ctx.state`, the run's shared notebook: one Python dict that every stage of the run reads and writes. Recon appends to `ctx.state["observations"]`, and triage reads that same list.
+- It returns a `ToolResult`: `ToolResult(content=...)` when it worked, `ToolResult.failure("why")` when it didn't. The model sees either one.
+
+**Stages hand each other records, not transcripts.** When a role finishes, its conversation is thrown away. Only what its tools stored in `ctx.state` reaches the next stage, which is why `record_observation` matters.
+
+**Where each lab's code is:**
+
+| Lab | Files |
+|---|---|
+| Recon | `harness/roles/recon.py`, `mcp-skeleton/server.py` |
+| Triage | `harness/roles/triage.py`, `harness/roles/refute.py` |
+| Confirm | `harness/roles/build.py`, `exploit.py`, `judge.py` |
+| Scope | `scope-gate/rules.yaml` |
+
+Every `TODO` comment says what's expected, and `python -m pytest harness/tests -q` checks the plumbing after each change. Using a coding assistant? Point it at the `TODO` and the step here; the prompts at the end of each step do that.
+
+---
+
 ## Recon lab: giving an agent capability (25 min)
 
 The recon role explores the target and records what it sees. Its output is a
