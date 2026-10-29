@@ -167,6 +167,11 @@ Want to wrap something of your own instead? The options from the outline:
 The decision that matters is what goes in the tool description, which the
 model reads on every call, and what goes in the prompt.
 
+> Hint: `mcp_search_notes` in the trace but no `mcp_read_note`? The agent
+> never needed a whole note, so your `read_note` never ran. Tell it to find
+> the rules of engagement with `mcp_search_notes` and read that note with
+> `mcp_read_note` before it touches the target, and run again.
+
 ### What testing showed
 
 - Recon finished Flag Command by itself, in six turns, with "do not exploit
@@ -188,8 +193,9 @@ model reads on every call, and what goes in the prompt.
   `pattern` as a whole-string match, so the model could send only `http://`.
   The model fell back to curl and the run looked fine. A tool schema is a
   contract with every provider that serves the model.
-- The browser comparison had nothing to compare: everything on this target is
-  readable with curl, so neither the skill nor the MCP tools were used.
+- The browser comparison had little to compare: everything on this target is
+  readable with curl, so the skill was used once at most and the MCP tools not
+  at all.
   Offering 25 MCP tools that nobody called still took input tokens from 45.6k
   to 98.6k for the same run.
 - A call that comes back with `stop_reason` `content_filter` and no tokens was
