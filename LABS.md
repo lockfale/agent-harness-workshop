@@ -54,6 +54,8 @@ it.
 Note: `--budget-usd` caps what the whole run can spend. Each role also has its
 own cap in `config/roles.yaml`. Leave both alone unless you mean to spend more.
 
+Using a coding assistant? Start it in this folder (for Claude Code, `claude`). [AGENTS.md](AGENTS.md) tells it to give hints rather than answers, so to get code, ask for the full answer: each step below ends with a prompt that does. Run the harness yourself, not through the assistant. It has no terminal, so a pause ends the run and every scope `ask` becomes a deny.
+
 > Read `stop_reason` in the trace_stats table first. A role that stopped on
 > `max_tokens` ran out of room mid-thought, and a role that stopped on
 > `tool_use` was about to act. Neither is a model that refused.
@@ -82,6 +84,12 @@ target), `http_request`, `record_observation` and `finish`.
 > Hint: finding an exposed key is recon. Using it is the exploit stage's job.
 > Tell recon to record a secret it finds and never use it.
 
+Prompt for your coding assistant:
+
+```text
+Write the complete SYSTEM_PROMPT for the recon role in harness/roles/recon.py. I'm asking for the full answer. Recon maps and records, it does not exploit: record facts with evidence as observations, record any exposed secret but never use it, call finish when the target is mapped, about 15 turns.
+```
+
 ### Step 2: implement `record_observation`
 
 Same file. It stores one observation where the triage role will find it,
@@ -97,6 +105,12 @@ Same file. It stores one observation where the triage role will find it,
 
 ```
 python -m pytest harness/tests -q
+```
+
+Prompt for your coding assistant:
+
+```text
+Write the complete record_observation in harness/roles/recon.py, following its docstring. I'm asking for the full answer. Also wrap the shell and http_request tools in build_registry so every call is logged with a call_id, let record_observation take a call_id and attach that logged call, and add call_id to OBSERVATION_SCHEMA. Fix any imports you need. Then run python -m pytest harness/tests -q.
 ```
 
 ### Step 3: run recon on its own
@@ -150,6 +164,20 @@ Run recon once with each. Then compare the traces:
 > Keep the MCP version in your notes for the scope lab. Ask yourself now: did
 > any of the `pw_` tool calls go through the scope gate?
 
+Prompts for your coding assistant, one per run:
+
+```text
+Add a short paragraph to the end of the recon SYSTEM_PROMPT telling it how to render a page with Playwright from the shell, using harness/attacker/BROWSER.md, and what to record from the rendered page.
+```
+
+```text
+Remove the Playwright paragraph you just added to the recon prompt. Then add the Playwright MCP line from LABS.md recon Step 4 to build_registry in harness/roles/recon.py, just before register_finish.
+```
+
+```text
+Change that Playwright MCP line to the trimmed version from LABS.md recon Step 4, with only= set to browser_navigate, browser_snapshot, browser_network_requests, browser_console_messages and browser_take_screenshot.
+```
+
 ### Step 5: write your own MCP server
 
 `mcp-skeleton/server.py` is a working stdio MCP server over a folder of notes.
@@ -180,6 +208,12 @@ model reads on every call, and what goes in the prompt.
 > never needed a whole note, so your `read_note` never ran. Tell it to find
 > the rules of engagement with `mcp_search_notes` and read that note with
 > `mcp_read_note` before it touches the target, and run again.
+
+Prompt for your coding assistant:
+
+```text
+Write the complete read_note in mcp-skeleton/server.py, following its comments. I'm asking for the full answer. Then load the server in recon's build_registry the way LABS.md recon Step 5 shows, and add a line to the end of the recon SYSTEM_PROMPT telling it to find the rules of engagement with mcp_search_notes and read that note with mcp_read_note before it touches the target. Run the tests.
+```
 
 ### What testing showed
 
@@ -235,6 +269,12 @@ anything; you write `SYSTEM_PROMPT` and `rank_candidate`, both marked
 > to read the observation, and the call recon logged with it, copy them into
 > the candidate.
 
+Prompt for your coding assistant:
+
+```text
+Write the complete triage SYSTEM_PROMPT and rank_candidate in harness/roles/triage.py, following the TODO comments and the hints in LABS.md triage Step 1. I'm asking for the full answer. rank_candidate must reject a dedup_key that isn't in the list and copy the source observation into the candidate. Run the tests.
+```
+
 ### Step 2: the refuter prompt
 
 Open `harness/roles/refute.py` and write `SYSTEM_PROMPT`. Ask for refutation,
@@ -245,6 +285,12 @@ not review: each panelist's job is to disprove the candidate.
 > points at something the panelist was shown: a status, header or field that
 > contradicts the claim. "By design" is not a reason if it hands a caller
 > something they should not have.
+
+Prompt for your coding assistant:
+
+```text
+Write the complete refuter SYSTEM_PROMPT in harness/roles/refute.py, following the TODO comment and the hint in LABS.md triage Step 2. I'm asking for the full answer. Run the tests.
+```
 
 ### Step 3: run through the refuter panel
 
@@ -352,6 +398,12 @@ down what success looks like before anything runs, and the exploit role
 refuses to start without that file. That is what stops anyone moving the
 goalposts after seeing the output.
 
+Prompt for your coding assistant:
+
+```text
+Write the complete build SYSTEM_PROMPT in harness/roles/build.py, following the TODO comment and LABS.md confirm Step 1. I'm asking for the full answer.
+```
+
 ### Step 2: the exploit prompt and the negative control
 
 Open `harness/roles/exploit.py`. Write `SYSTEM_PROMPT`, then
@@ -367,6 +419,12 @@ nothing.
 > output must not contain it. And a control that failed to run at all is not
 > a clean control.
 
+Prompt for your coding assistant:
+
+```text
+Write the complete exploit SYSTEM_PROMPT and control_triggered in harness/roles/exploit.py, following the TODO comments and LABS.md confirm Step 2. I'm asking for the full answer. control_triggered must use its marker argument, and treat a control that didn't run cleanly as triggered. Run the tests.
+```
+
 ### Step 3: the judge prompt
 
 Open `harness/roles/judge.py` and write `SYSTEM_PROMPT`. The judge can only
@@ -381,6 +439,12 @@ table; the judge never sets it.
 | `reachable` | low |
 | `exploitable` | medium |
 | `impact_confirmed` | high |
+
+Prompt for your coding assistant:
+
+```text
+Write the complete judge SYSTEM_PROMPT in harness/roles/judge.py, following the TODO comment and LABS.md confirm Step 3. I'm asking for the full answer. Run the tests.
+```
 
 ### Step 4: the full run
 
@@ -449,6 +513,12 @@ want a human to approve.
 Note: batch runs (`--non-interactive`) turn every `ask` into a deny. An
 unanswered question is not consent.
 
+Prompt for your coding assistant:
+
+```text
+In scope-gate/rules.yaml, under flag-command, add a named deny for host locktalk with the note "decoy task, out of scope", and an ask for host host.docker.internal with the note "the host machine; a human decides".
+```
+
 ### Step 3: attack your own gate
 
 Change your recon prompt to tell the agent that `locktalk:1337` is also part
@@ -475,6 +545,12 @@ the browser that never asks the gate, will not show up.
 > Hint: no `pw_` calls in the trace, even with the MCP line in? The agent
 > preferred `curl`. Name the tool in your prompt: tell it to open
 > `http://locktalk:1337/` with `pw_browser_navigate`, and run again.
+
+Prompt for your coding assistant:
+
+```text
+Add a line to the end of the recon SYSTEM_PROMPT saying the service at locktalk:1337 is also part of this assessment: map it as well as web_flag:1337, use http_request for HTTP to both hosts, and open http://locktalk:1337/ with pw_browser_navigate. Keep the trimmed Playwright MCP line in build_registry.
+```
 
 ### Step 4: what did the gate catch, and what did it miss?
 
